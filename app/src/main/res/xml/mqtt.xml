@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditTextPreference
+        android:key="MQTT_HOST"
+        android:title="Host" />
+
+    <EditTextPreference
+        android:key="MQTT_PORT"
+        android:title="Port" />
+
+    <EditTextPreference
+        android:key="MQTT_USER"
+        android:title="Username" />
+
+    <EditTextPreference
+        android:key="MQTT_PASS"
+        android:title="Password" />
+
+    <SwitchPreferenceCompat android:key="MQTT_CONNECTOR" />
+
+    <PreferenceCategory>
+
+        <kittoku.osc.fragment.LongSummaryPreference
+            android:key="MQTT_STATUS"
+            android:title="Current Status" />
+
+    </PreferenceCategory>
+
+
+</PreferenceScreen>
