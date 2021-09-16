@@ -138,14 +138,13 @@ internal enum class StatusPreference(override val defaultValue: String) :
                 editor.putString(name, value)
                 editor.apply()
             }
-
             it.provideSummary(value)
         }
     }
 
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
         fragment.findPreference<Preference>(name)!!.also {
-            it.provideSummary(getValue(it.sharedPreferences))
+            it.provideSummary(""/*getValue(it.sharedPreferences)*/)
             initValue(fragment, prefs)
         }
     }
@@ -210,27 +209,11 @@ internal enum class BoolPreference(override val defaultValue: Boolean) :
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
         fragment.findPreference<TwoStatePreference>(name)!!.also {
             if (this == HOME_CONNECTOR) {
-//if (getValue(it.sharedPreferences)==true && checkPreferences()) {
-//
-//        val intent = VpnService.prepare(context)
-//
-//        if (intent != null) {
-//            startActivityForResult(intent, 0)
-//        } else {
-//            onActivityResult(0, Activity.RESULT_OK, null)
-//        }
-//    } else {
-//        startVpnService(VpnAction.ACTION_DISCONNECT)
-//    }
-
-//                prefs.edit()
-//                    .putBoolean(BoolPreference.HOME_CONNECTOR.name, getValue(it.sharedPreferences))
-//                    .apply()
-
 
                 Log.e("@!@initPreference HOME_CONNECTOR", getValue(it.sharedPreferences).toString())
-//                it.callChangeListener(getValue(it.sharedPreferences)) // запускает при старте если было запущено
-                it.callChangeListener(true) // запускает всегда
+                it.callChangeListener(getValue(it.sharedPreferences)) // запускает при старте если было запущено
+//                this.setValue(fragment,true)
+//                it.callChangeListener(true) // запускает всегда
             }
             initValue(fragment, prefs)
             it.isSingleLineTitle = false

@@ -2,8 +2,9 @@ package kittoku.osc.fragment
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.*
-import android.net.*
+import android.content.Intent
+import android.content.SharedPreferences
+import android.net.VpnService
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -23,6 +24,15 @@ private val homePreferences = arrayOf<PreferenceWrapper<*>>(
 )
 
 class HomeFragment : PreferenceFragmentCompat() {
+//    private val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+//    init {
+//        prefs = preferenceManager.sharedPreferences
+//        homePreferences.forEach {
+//            it.initPreference(this, preferenceManager.sharedPreferences)
+//        }
+//        startVPN()
+//    }
+
     private lateinit var sharedPreferenceListener: SharedPreferences.OnSharedPreferenceChangeListener // for avoiding GC
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -34,31 +44,62 @@ class HomeFragment : PreferenceFragmentCompat() {
 
         attachSharedPreferenceListener()
         attachConnectorListener()
+//        fragment.findPreference<TwoStatePreference>(name)!!.also {
+//            if (this == BoolPreference.HOME_CONNECTOR) {
+//                Log.e("@!@initPreference_HOME_CONNECTOR", getValue(it.sharedPreferences).toString())
+//                it.callChangeListener(getValue(it.sharedPreferences)) // запускаем при старте если было запущено
+//                this.setValue(fragment,false)
+
+        preferenceManager.sharedPreferences.edit()
+            .putBoolean(BoolPreference.HOME_CONNECTOR.name, true).apply()
+//                this.setValue(fragment,true)
+//                it.callChangeListener(true) // запускаем всегда
+
+        startVPN()
     }
 
     @SuppressLint("LongLogTag")
     private fun attachSharedPreferenceListener() {
         // for updating by both user and system
-        sharedPreferenceListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
-            when (key) {
-                BoolPreference.HOME_CONNECTOR.name -> {
-                    BoolPreference.HOME_CONNECTOR.also {
-                        it.setValue(this, it.getValue(prefs))
+        sharedPreferenceListener =
+            SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+                when (key) {
+                    BoolPreference.HOME_CONNECTOR.name -> {
+                        BoolPreference.HOME_CONNECTOR.also {
+                            it.setValue(this, it.getValue(prefs))
 //                        prefs.edit().putBoolean(BoolPreference.HOME_CONNECTOR.name, it.getValue(prefs)).apply()
-                        Log.e("@!@attachSharedPreferenceListener HOME_CONNECTOR",it.getValue(prefs).toString())
+                            Log.e(
+                                "@!@attachSharedPreferenceListener HOME_CONNECTOR",
+                                it.getValue(prefs).toString()
+                            )
+                        }
                     }
-                }
 
-                StatusPreference.STATUS.name -> {
-                    StatusPreference.STATUS.also {
-                        it.setValue(this, it.getValue(prefs))
+                    StatusPreference.STATUS.name -> {
+                        StatusPreference.STATUS.also {
+                            it.setValue(this, it.getValue(prefs))
 //                        Log.e("@!@STATUS",it.getValue(prefs))
+                        }
                     }
                 }
             }
-        }
 
-        preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceListener)
+        preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(
+            sharedPreferenceListener
+        )
+    }
+
+    private fun startVPN(): Boolean {
+        if (!checkPreferences()) {
+            return false
+        }
+        val intent = VpnService.prepare(context)
+        if (intent != null) {
+            startActivityForResult(intent, 0)
+        } else {
+            onActivityResult(0, Activity.RESULT_OK, null)
+        }
+        return true
     }
 
     private fun attachConnectorListener() {
@@ -66,17 +107,7 @@ class HomeFragment : PreferenceFragmentCompat() {
         findPreference<SwitchPreferenceCompat>(BoolPreference.HOME_CONNECTOR.name)!!.also {
             it.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newState ->
                 if (newState == true) {
-                    if (!checkPreferences()) {
-                        return@OnPreferenceChangeListener false
-                    }
-
-                    val intent = VpnService.prepare(context)
-
-                    if (intent != null) {
-                        startActivityForResult(intent, 0)
-                    } else {
-                        onActivityResult(0, Activity.RESULT_OK, null)
-                    }
+                    startVPN()
                 } else {
                     startVpnService(VpnAction.ACTION_DISCONNECT)
                 }
@@ -101,8 +132,8 @@ class HomeFragment : PreferenceFragmentCompat() {
     }
 
     private fun checkPreferences(): Boolean {
+//        val prefs = PreferenceManager.getDefaultSharedPreferences(this.context)
         val prefs = preferenceManager.sharedPreferences
-
 
         StrPreference.HOME_HOST.getValue(prefs).also {
             if (TextUtils.isEmpty(it)) {
