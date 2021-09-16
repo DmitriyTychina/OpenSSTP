@@ -171,8 +171,9 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
     private fun tryReconnection() {
         launch {
             reconnectionSettings.consumeCount()
-            makeNotification(0, reconnectionSettings.generateMessage())
-            prefs.edit().putString(StatusPreference.STATUS.name, "").apply()
+            val str = reconnectionSettings.generateMessage()
+            prefs.edit().putString(StatusPreference.STATUS.name, str).apply()
+            makeNotification(0, str)
             delay(reconnectionSettings.intervalMillis)
             val result = withTimeoutOrNull(10_000) {
                 while (true) {

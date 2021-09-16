@@ -34,7 +34,8 @@ internal class SstpVpnService : VpnService() {
                 Log.e("@!@","beForegrounded!!!!!")
                 it.run()
             }
-            Service.START_STICKY
+//            Service.START_STICKY
+            Service.START_STICKY_COMPATIBILITY
         }
     }
 
