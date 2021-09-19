@@ -3,8 +3,10 @@ package kittoku.osc
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.net.VpnService
 import android.os.Build
 import android.util.Log
@@ -17,10 +19,30 @@ internal enum class VpnAction(val value: String) {
 }
 
 internal class SstpVpnService : VpnService() {
+    private var broadcastReceiver: BroadcastReceiver? = null
+
     internal val CHANNEL_ID = "OpenSSTPClient"
-    private var controlClient: ControlClient?  = null
+    private var controlClient: ControlClient? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+
+        val filter = IntentFilter()
+
+        filter.addAction("android.net.wifi.STATE_CHANGE")
+        filter.addAction("android.intent.action.PHONE_STATE")
+        filter.addAction("android.intent.action.PHONE_STATE")
+        filter.addAction("android.provider.Telephony.SMS_RECEIVED")
+        filter.addAction("android.intent.action.BATTERY_LOW")
+        filter.addAction(Intent.ACTION_POWER_CONNECTED)
+        filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+        filter.addAction(Intent.ACTION_BATTERY_CHANGED)
+        filter.addAction(Intent.ACTION_SCREEN_ON)
+        filter.addAction(Intent.ACTION_SCREEN_OFF)
+
+        broadcastReceiver = MainReceiver()
+        registerReceiver(broadcastReceiver, filter)
+        (broadcastReceiver as MainReceiver).initialize(this)
+
         return if (VpnAction.ACTION_DISCONNECT.value == intent?.action ?: false) {
             controlClient?.kill(Throwable("kittoku.osc.DISCONNECT"))
             controlClient = null
@@ -31,7 +53,7 @@ internal class SstpVpnService : VpnService() {
             controlClient?.kill(Throwable("kittoku.osc.CONNECT"))
             controlClient = ControlClient(this).also {
                 beForegrounded() // уведомление о работе vpn
-                Log.e("@!@","beForegrounded!!!!!")
+                Log.e("@!@", "beForegrounded!!!!!")
                 it.run()
             }
 //            Service.START_STICKY
@@ -41,8 +63,13 @@ internal class SstpVpnService : VpnService() {
 
     private fun beForegrounded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(CHANNEL_ID, CHANNEL_ID, NotificationManager.IMPORTANCE_MIN) //IMPORTANCE_MIN - без звука
-            val notificationManager: NotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                CHANNEL_ID,
+                NotificationManager.IMPORTANCE_MIN
+            ) //IMPORTANCE_MIN - без звука
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
 
