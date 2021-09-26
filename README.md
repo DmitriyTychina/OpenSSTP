@@ -4,7 +4,7 @@ This is an open-sourced Secure Socket Tunneling Protocol (MS-SSTP) client for An
 So no test with other servers is done. Its behavior may be still unstable.
 
 ## Installation
-You can download and install the latest version via [Google Play](https://play.google.com/store/apps/details?id=kittoku.osc)
+You can download and install the latest version via [Google Play](https://play.google.com/store/apps/details?id=com.app.amigo)
 
 ## Usage
 Enter `Host`, `Username` and `Password` preferences and turn the switch on. If a key icon gets to show on 

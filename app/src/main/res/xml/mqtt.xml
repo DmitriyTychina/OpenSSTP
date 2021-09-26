@@ -21,7 +21,7 @@
 
     <PreferenceCategory>
 
-        <kittoku.osc.fragment.LongSummaryPreference
+        <com.app.amigo.fragment.LongSummaryPreference
             android:key="MQTT_STATUS"
             android:title="Current Status" />
 
