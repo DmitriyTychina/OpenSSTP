@@ -84,13 +84,13 @@ class HomeFragment : PreferenceFragmentCompat() {
             return false
         }
         val intent = VpnService.prepare(context)
-//        if (intent != null) {
-//            startActivityForResult(intent, 0)
-//        } else {
-//            onActivityResult(0, Activity.RESULT_OK, null)
-//        }
-        Log.d(TAG, "startVpnService")
-        startVpnService(VpnAction.ACTION_CONNECT)
+        if (intent != null) {
+            startActivityForResult(intent, 0)
+        } else {
+            onActivityResult(0, Activity.RESULT_OK, null)
+        }
+//        Log.d(TAG, "startVpnService")
+//        startVpnService(VpnAction.ACTION_CONNECT)
 
         return true
     }

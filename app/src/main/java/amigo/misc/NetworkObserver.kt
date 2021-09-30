@@ -1,20 +1,15 @@
 package com.app.amigo.misc
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.net.*
 import android.os.Build
 import androidx.preference.PreferenceManager
 import com.app.amigo.ControlClient
 import com.app.amigo.fragment.StatusPreference
+import org.chromium.base.Log
 
 internal class NetworkObserver(val parent: ControlClient) {
-    private val manager: ConnectivityManager
-    = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        parent.vpnService.getSystemService(ConnectivityManager::class.java)
-    } else ({
-        parent.vpnService.getSystemService(Context.CONNECTIVITY_SERVICE)
-    }) as ConnectivityManager
+    private val manager = parent.vpnService.getSystemService(ConnectivityManager::class.java)
 
     private val callback: ConnectivityManager.NetworkCallback
 
@@ -33,8 +28,8 @@ internal class NetworkObserver(val parent: ControlClient) {
 
         callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                        manager.getLinkProperties(network)?.also { linkProperties ->
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                    manager.getLinkProperties(network)?.also { linkProperties ->
                         makeSummary(linkProperties).also {
                             prefs.edit().putString(StatusPreference.STATUS.name, it).apply()
                         }
@@ -88,7 +83,8 @@ internal class NetworkObserver(val parent: ControlClient) {
     }
 
     internal fun close() {
-        manager.unregisterNetworkCallback(callback)
+        Log.e("@!@observer", "callback "+callback)
+//        manager.unregisterNetworkCallback(callback) // убрал - для автозапуска при загрузке Android
         wipeStatus()
     }
 }

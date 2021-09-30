@@ -8,6 +8,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
+import com.app.amigo.NotificationHelper.Companion.NOTIFICATION_ID
 import com.app.amigo.fragment.BoolPreference
 import com.app.amigo.fragment.IntPreference
 import com.app.amigo.fragment.StatusPreference
@@ -109,31 +110,39 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
 
     internal fun kill(exception: Throwable?) {
         launch {
+            Log.d(TAG, "@!@*****exception: " + exception + " *****isClosing: " + isClosing)
             mutex.withLock {
 //                Log.d(TAG, "An unexpected event occurred " + exception.toString())
                 if (!isClosing) {
                     isClosing = true
                     controlQueue.add(0)
-//                    if (exception != null && exception !is SuicideException) {
-//                        inform("An unexpected event occurred", exception)
-//                    }
-                    Log.d(TAG, "@!@exception.localizedMessage " + exception?.localizedMessage)
-                    if (exception != null) when (exception.localizedMessage) {
-                        "com.app.amigo.DISCONNECT", "Kill this client as intended" -> {
-                            prefs.edit().putString(StatusPreference.STATUS.name, "").apply()
-                            observer?.close()
-//                    prefs.edit().putString(StatusPreference.STATUS.name, "").apply()
-                        }
+                    if (exception != null && exception !is SuicideException) {
+                        observer?.close()
+                        inform("An unexpected event occurred", exception)
+                        Log.e(TAG, "@!@ !is SuicideException " + exception)
                     }
+                    if (exception != null)
+                        when (exception.localizedMessage) {
+                            "com.app.amigo.DISCONNECT"/*, "Kill this client as intended"*/ -> {
+                                prefs.edit().putString(StatusPreference.STATUS.name, "").apply()
+//                                observer?.close()
+                            }
+                        }
                     // release ConnectivityManager resource
-//                    observer?.close()
+//                    Log.e(TAG, "@!@***** 1 *****")
+//                    observer?.close() // если активно - прога почему-то крашится
+                    Log.e(TAG, "@!@***** 2 *****")
 
                     // no more packets needed to be retrieved
                     ipTerminal.release()
+                    Log.e(TAG, "@!@***** 3 *****")
                     jobData?.cancel()
+                    Log.e(TAG, "@!@***** 4 *****")
                     jobEncapsulate?.cancel()
+                    Log.e(TAG, "@!@***** 5 *****")
                     // wait until SstpClient.sendLastGreeting() is invoked
                     jobIncoming?.join()
+                    Log.e(TAG, "@!@***** 6 *****")
                     // wait until jobControl finishes sending messages
                     withTimeout(10_000) {
                         while (isActive) {
@@ -142,22 +151,32 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                             } else break
                         }
                     }
+                    Log.e(TAG, "@!@***** 7 *****")
                     // avoid jobControl being stuck with socket
                     sslTerminal.release()
+                    Log.e(TAG, "@!@***** 8 *****")
                     // ensure jobControl is completed
                     jobControl?.cancel()
+                    Log.e(TAG, "@!@***** 9 *****")
 
                     if (exception != null) {
-                        if (exception is SuicideException || (exception.localizedMessage != "com.app.amigo.DISCONNECT" && reconnectionSettings.isEnabled && BoolPreference.HOME_CONNECTOR.getValue(prefs))) {
+                        if (exception.localizedMessage != "com.app.amigo.DISCONNECT" &&
+                            reconnectionSettings.isEnabled &&
+                            BoolPreference.HOME_CONNECTOR.getValue(prefs)
+                        ) {
                             if (reconnectionSettings.isRetryable) {
                                 tryReconnection()
                                 return@withLock
                             } else {
                                 inform("Exhausted retry counts", null)
-                                makeNotification(0, "Failed to reconnect: Exhausted retry counts")
+                                makeNotification(
+                                    NOTIFICATION_ID,
+                                    "Failed to reconnect: Exhausted retry counts"
+                                )
                             }
                         }
                     }
+                    Log.d(TAG, "kill: bye")
                     bye()
                 }
             }
@@ -198,7 +217,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
             reconnectionSettings.consumeCount()
             val str = reconnectionSettings.generateMessage()
             prefs.edit().putString(StatusPreference.STATUS.name, str).apply()
-            makeNotification(0, str)
+            makeNotification(NOTIFICATION_ID, str)
             delay(reconnectionSettings.intervalMillis)
             val result = withTimeoutOrNull(10_000) {
                 while (true) {
@@ -210,12 +229,13 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                 }
             }
             if (result == null && !reconnectionSettings.isRetryable) {
+                Log.e(TAG, "tryReconnection: result == null")
                 inform("The last session cannot be cleaned up", null)
-                makeNotification(0, "Failed to reconnect2")
+                makeNotification(NOTIFICATION_ID, "Failed to reconnect2")
                 bye()
             } else {
                 NotificationManagerCompat.from(vpnService.applicationContext).also {
-                    it.cancel(0) // удалить notifi
+                    it.cancel(NOTIFICATION_ID) // удалить notifi
                 }
                 initialize()
                 run()

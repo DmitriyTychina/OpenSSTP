@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.VpnService
 import android.os.Build
 import android.util.Log
 import androidx.preference.PreferenceManager
@@ -35,14 +36,17 @@ class MainBroadcastReceiver : BroadcastReceiver() {
 //        service.action = "broadcast"
         if (flagautostart && (action == "android.intent.action.BOOT_COMPLETED" ||
                     action == "android.intent.action.QUICKBOOT_POWERON" ||
-                    action == "com.htc.intent.action.QUICKBOOT_POWERON")) {
+                    action == "com.htc.intent.action.QUICKBOOT_POWERON")
+        ) {
+            VpnService.prepare(context)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.applicationContext.startForegroundService(
-                    service.setAction(VpnAction.ACTION_CONNECT.value))
-//                startVpnService(VpnAction.ACTION_CONNECT)
+                    service.setAction(VpnAction.ACTION_CONNECT.value)
+                )
             } else {
                 context.applicationContext.startService(
-                    service.setAction(VpnAction.ACTION_CONNECT.value))
+                    service.setAction(VpnAction.ACTION_CONNECT.value)
+                )
             }
         }
 
