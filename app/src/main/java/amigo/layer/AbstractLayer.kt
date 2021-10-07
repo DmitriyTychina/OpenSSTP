@@ -51,6 +51,7 @@ internal class Timer(private val maxLength: Long) {
 
 internal abstract class Client(internal val parent: ControlClient) {
     internal val status = parent.status
+    internal var status_sstp_old = parent.status.sstp
     internal val incomingBuffer = parent.incomingBuffer
     internal val networkSetting = parent.networkSetting
 

@@ -4,6 +4,7 @@ import com.app.amigo.ControlClient
 import com.app.amigo.misc.*
 import com.app.amigo.negotiator.*
 import com.app.amigo.unit.*
+import org.chromium.base.Log
 
 
 internal enum class LcpState {
@@ -358,6 +359,8 @@ internal class PppClient(parent: ControlClient) : Client(parent) {
     }
 
     private fun startNetworking() {
+        Log.e("@!@PppClient :", "startNetworking")
+
         parent.attachNetworkObserver()
 
         parent.ipTerminal.also {
@@ -376,8 +379,11 @@ internal class PppClient(parent: ControlClient) : Client(parent) {
         echoTimer.reset()
     }
 
+    private var TAG = "@!@PppClient"
+
     internal fun kill() {
         status.sstp = SstpStatus.CALL_DISCONNECT_IN_PROGRESS_1
+        Log.e(TAG, "***** kill CALL_DISCONNECT_IN_PROGRESS_1*****")
         parent.inform("PPP layer turned down", null)
     }
 }

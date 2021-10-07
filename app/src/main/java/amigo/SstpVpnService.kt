@@ -22,7 +22,7 @@ internal class SstpVpnService : VpnService() {
     internal val CHANNEL_ID = "HomeClient"
     var controlClient: ControlClient? = null
     private var state = false
-    private val helper by lazy { NotificationHelper(this) }
+    internal val helper by lazy { NotificationHelper(this) }
 
     override fun onCreate() {
         super.onCreate()

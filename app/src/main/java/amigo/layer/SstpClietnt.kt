@@ -6,6 +6,7 @@ import com.app.amigo.negotiator.*
 import com.app.amigo.unit.MessageType
 import com.app.amigo.unit.PPP_HEADER
 import com.app.amigo.unit.PacketType
+import org.chromium.base.Log
 
 
 internal class SstpClient(parent: ControlClient) : Client(parent) {
@@ -75,7 +76,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
         if (!challengeWholePacket()) return
 
         when (PacketType.resolve(incomingBuffer.getShort())) {
-            PacketType.DATA ->{
+            PacketType.DATA -> {
                 readAsData()
             }
 
@@ -121,7 +122,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
         echoCounter.reset()
 
         when (PacketType.resolve(incomingBuffer.getShort())) {
-            PacketType.DATA ->{
+            PacketType.DATA -> {
                 readAsData()
             }
 
@@ -160,21 +161,39 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
         }
     }
 
+    val TAG = "@!@SstpClient"
     override fun proceed() {
+        Log.d(TAG, "*****status.sstp: " + status.sstp)
         when (status.sstp) {
             SstpStatus.CLIENT_CALL_DISCONNECTED -> {
+                status_sstp_old = status.sstp
                 parent.sslTerminal.initializeSocket()
                 sendCallConnectRequest()
                 status.sstp = SstpStatus.CLIENT_CONNECT_REQUEST_SENT
+                parent.vpnService.helper.updateNotification("Подключаемся...")
             }
 
             SstpStatus.CLIENT_CONNECT_REQUEST_SENT -> proceedRequestSent()
 
             SstpStatus.CLIENT_CONNECT_ACK_RECEIVED -> proceedAckReceived()
 
-            SstpStatus.CLIENT_CALL_CONNECTED -> proceedConnected()
+            SstpStatus.CLIENT_CALL_CONNECTED -> {
+                if (status_sstp_old != status.sstp) {
+                    parent.vpnService.helper.updateNotification("Подключено")
+                    status_sstp_old = status.sstp
+                }
+                proceedConnected()
+            }
 
-            else -> sendLastGreeting()
+//        SstpStatus.CALL_ABORT_IN_PROGRESS_1,
+//        SstpStatus.CALL_ABORT_IN_PROGRESS_2,
+//        SstpStatus.CALL_DISCONNECT_IN_PROGRESS_1,
+//        SstpStatus.CALL_DISCONNECT_IN_PROGRESS_2,
+            else -> {
+                status_sstp_old = status.sstp
+                sendLastGreeting()
+                parent.vpnService.helper.updateNotification("Обрыв соединения")
+            }
         }
     }
 

@@ -11,7 +11,7 @@ import org.chromium.base.Log
 internal class NetworkObserver(val parent: ControlClient) {
     private val manager = parent.vpnService.getSystemService(ConnectivityManager::class.java)
 
-    private val callback: ConnectivityManager.NetworkCallback
+    private var callback: ConnectivityManager.NetworkCallback? = null
 
     private val prefs =
         PreferenceManager.getDefaultSharedPreferences(parent.vpnService.applicationContext)
@@ -44,7 +44,8 @@ internal class NetworkObserver(val parent: ControlClient) {
             }
         }
 
-        manager.registerNetworkCallback(request, callback)
+//        manager.registerNetworkCallback(request, callback)
+        callback?.let { manager.registerNetworkCallback(request, it) }
     }
 
     @SuppressLint("ServiceCast")
@@ -83,8 +84,8 @@ internal class NetworkObserver(val parent: ControlClient) {
     }
 
     internal fun close() {
-        Log.e("@!@observer", "callback "+callback)
-//        manager.unregisterNetworkCallback(callback) // убрал - для автозапуска при загрузке Android
+        Log.e("@!@observer", "callback " + callback)
+//        callback?.let { manager?.unregisterNetworkCallback(it) } // убрал - для автозапуска при загрузке Android
         wipeStatus()
     }
 }
