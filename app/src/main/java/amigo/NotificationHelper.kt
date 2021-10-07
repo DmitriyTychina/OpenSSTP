@@ -17,7 +17,7 @@ class NotificationHelper(private val context: Context) {
 
     private val notificationBuilder: NotificationCompat.Builder by lazy {
         NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle(context.getString(R.string.app_name))
+//            .setContentTitle(context.getString(R.string.app_name))
             .setSound(null)
 //            .setContentIntent(contentIntent)
             .setSmallIcon(R.drawable.ic_baseline_vpn_lock_24)
