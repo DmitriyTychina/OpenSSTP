@@ -269,6 +269,27 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
 //                NotificationManagerCompat.from(vpnService.applicationContext).also {
 //                    it.cancel(NOTIFICATION_ID) // удалить notifi
 //                }
+
+    //*******
+//                val wifiManager = vpnService.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+//                val wifiName = wifiManager.deviceName()
+//                wifiManager.getConnectionInfo()
+
+//                val connManager =
+//                    vpnService.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+//                val networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+//                if (networkInfo?.isConnected == true) {
+//                    val wifiManager =
+//                        vpnService.applicationContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE) as WifiManager
+//                    val connectionInfo = wifiManager.connectionInfo
+//                    if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.ssid)) {
+//                        Log.e("ssid", connectionInfo.ssid)
+//                    }
+//                }
+//                else{
+//                    Log.e("ssid", "No Connection")
+//                }
+           //********
                 initialize()
                 run()
             }

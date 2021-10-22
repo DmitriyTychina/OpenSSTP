@@ -1,11 +1,9 @@
 package com.app.amigo.fragment
 
-import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import android.net.Uri
 import android.text.InputType
 import android.text.TextUtils
-import android.util.Log
 import androidx.preference.*
 import com.app.amigo.DEFAULT_MRU
 import com.app.amigo.DEFAULT_MTU
@@ -49,6 +47,9 @@ internal enum class StrPreference(override val defaultValue: String) : Preferenc
     HOME_HOST(""),
     HOME_USER(""),
     HOME_PASS(""),
+    MQTT_HOST(""),
+    MQTT_USER(""),
+    MQTT_PASS(""),
     SSL_VERSION("DEFAULT");
 
     override fun getValue(prefs: SharedPreferences): String {
@@ -75,7 +76,7 @@ internal enum class StrPreference(override val defaultValue: String) : Preferenc
             }
         } else {
             fragment.findPreference<EditTextPreference>(name)!!.also {
-                if (this == HOME_PASS) {
+                if (this == HOME_PASS || this == HOME_HOST || this == MQTT_PASS || this == MQTT_USER) {
                     it.summaryProvider = passwordSummaryProvider
                     it.setInputType(TYPE_PASSWORD)
                 } else {
@@ -126,7 +127,8 @@ internal enum class DirPreference(override val defaultValue: String) : Preferenc
 
 internal enum class StatusPreference(override val defaultValue: String) :
     PreferenceWrapper<String> {
-    STATUS("");
+    STATUS(""),
+    MQTT_STATUS("");
 
     override fun getValue(prefs: SharedPreferences): String {
         return prefs.getString(name, defaultValue)!!
@@ -183,14 +185,15 @@ internal enum class SetPreference(override val defaultValue: Set<String>) :
 internal enum class BoolPreference(override val defaultValue: Boolean) :
     PreferenceWrapper<Boolean> {
     HOME_CONNECTOR(false),
+    MQTT_CONNECTOR(false),
     SSL_DO_VERIFY(true),
     SSL_DO_ADD_CERT(false),
     SSL_DO_SELECT_SUITES(false),
-    PPP_PAP_ENABLED(true),
+    PPP_PAP_ENABLED(false),
     PPP_MSCHAPv2_ENABLED(true),
     PPP_IPv4_ENABLED(true),
     PPP_IPv6_ENABLED(false),
-    IP_ONLY_LAN(false),
+    IP_ONLY_LAN(true),
     IP_ONLY_ULA(false),
     RECONNECTION_ENABLED(true),
     LOG_DO_SAVE_LOG(false);
@@ -205,15 +208,11 @@ internal enum class BoolPreference(override val defaultValue: Boolean) :
         }
     }
 
-    @SuppressLint("LongLogTag")
+    //    @SuppressLint("LongLogTag")
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
         fragment.findPreference<TwoStatePreference>(name)!!.also {
-            if (this == HOME_CONNECTOR) {
-
-                Log.d("@!@initPreference HOME_CONNECTOR", getValue(it.sharedPreferences).toString())
+            if (this == HOME_CONNECTOR || this == MQTT_CONNECTOR) {
                 it.callChangeListener(getValue(it.sharedPreferences)) // запускает при старте если было запущено
-//                this.setValue(fragment,true)
-//                it.callChangeListener(true) // запускает всегда
             }
             initValue(fragment, prefs)
             it.isSingleLineTitle = false
@@ -223,6 +222,7 @@ internal enum class BoolPreference(override val defaultValue: Boolean) :
 
 internal enum class IntPreference(override val defaultValue: Int) : PreferenceWrapper<Int> {
     SSL_PORT(443),
+    MQTT_PORT(1883),
     PPP_MRU(DEFAULT_MRU),
     PPP_MTU(DEFAULT_MTU),
     IP_PREFIX(0),

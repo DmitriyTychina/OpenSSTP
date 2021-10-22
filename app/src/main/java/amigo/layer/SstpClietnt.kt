@@ -6,7 +6,6 @@ import com.app.amigo.negotiator.*
 import com.app.amigo.unit.MessageType
 import com.app.amigo.unit.PPP_HEADER
 import com.app.amigo.unit.PacketType
-import org.chromium.base.Log
 
 
 internal class SstpClient(parent: ControlClient) : Client(parent) {
@@ -163,7 +162,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 
     val TAG = "@!@SstpClient"
     override fun proceed() {
-        Log.d(TAG, "*****status.sstp: " + status.sstp)
+//        Log.d(TAG, "*****status.sstp: " + status.sstp)
         when (status.sstp) {
             SstpStatus.CLIENT_CALL_DISCONNECTED -> {
                 status_sstp_old = status.sstp

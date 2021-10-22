@@ -3,6 +3,7 @@ package com.app.amigo.fragment
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.preference.DropDownPreference
 import androidx.preference.MultiSelectListPreference
 import androidx.preference.Preference
@@ -41,7 +42,9 @@ private val settingPreferences = arrayOf<PreferenceWrapper<*>>(
 )
 
 internal class SettingFragment : PreferenceFragmentCompat() {
+    private var TAG = "@!@SettingFragment"
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+        Log.d(TAG, "onCreatePreferences")
         setPreferencesFromResource(R.xml.settings, rootKey)
 
         settingPreferences.forEach {

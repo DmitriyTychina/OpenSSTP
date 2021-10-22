@@ -4,14 +4,14 @@ plugins {
 }
 
 android {
-    compileSdkVersion 31
+    compileSdkVersion 30
 
     defaultConfig {
         applicationId "com.app.amigo"
         minSdkVersion 23
-        targetSdkVersion 31
+        targetSdkVersion 30
         versionCode 16
-        versionName "1.3.3+"
+        versionName "1.3.3.+2"
 
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }

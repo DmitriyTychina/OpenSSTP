@@ -1,6 +1,5 @@
 package com.app.amigo.misc
 
-import android.annotation.SuppressLint
 import android.net.*
 import android.os.Build
 import androidx.preference.PreferenceManager
@@ -18,7 +17,6 @@ internal class NetworkObserver(val parent: ControlClient) {
 
     init {
         wipeStatus()
-
         val request = NetworkRequest.Builder().let {
             it.addTransportType(NetworkCapabilities.TRANSPORT_VPN)
             it.removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
@@ -48,7 +46,7 @@ internal class NetworkObserver(val parent: ControlClient) {
         callback?.let { manager.registerNetworkCallback(request, it) }
     }
 
-    @SuppressLint("ServiceCast")
+//    @SuppressLint("ServiceCast")
     private fun makeSummary(properties: LinkProperties): String {
         val summary = mutableListOf<String>()
 

@@ -3,6 +3,7 @@ package com.app.amigo
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.VpnService
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
@@ -29,7 +30,7 @@ internal class SstpVpnService : VpnService() {
         Log.d(TAG, "onCreate")
         if (broadcastReceiver == null) {
             val filter = IntentFilter()
-//            filter.addAction("android.net.wifi.STATE_CHANGE")
+            filter.addAction("android.net.wifi.STATE_CHANGE")
 //            filter.addAction("android.intent.action.PHONE_STATE")
 //            filter.addAction("android.intent.action.PHONE_STATE")
 //            filter.addAction("android.provider.Telephony.SMS_RECEIVED")
@@ -37,6 +38,8 @@ internal class SstpVpnService : VpnService() {
 //            filter.addAction(Intent.ACTION_POWER_CONNECTED)
 //            filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
 //            filter.addAction(Intent.ACTION_BATTERY_CHANGED)
+            filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+            filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
             filter.addAction(Intent.ACTION_SCREEN_ON)
             filter.addAction(Intent.ACTION_SCREEN_OFF)
             broadcastReceiver = MainBroadcastReceiver()

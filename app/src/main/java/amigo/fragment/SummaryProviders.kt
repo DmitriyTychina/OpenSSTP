@@ -18,7 +18,7 @@ internal val passwordSummaryProvider = Preference.SummaryProvider<EditTextPrefer
     if (TextUtils.isEmpty(it.text)) {
         "[No Value Entered]"
     } else {
-        "[Password Entered]"
+        "******"
     }
 }
 

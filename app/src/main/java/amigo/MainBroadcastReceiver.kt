@@ -1,22 +1,27 @@
 package com.app.amigo
 
+import amigo.getSSID
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.net.VpnService
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Log
 import androidx.preference.PreferenceManager
+import com.app.amigo.fragment.StatusPreference
+
 
 class MainBroadcastReceiver : BroadcastReceiver() {
     private var TAG = "@!@AppReceiver"
+    private var cnt = 0
+//    private final var wifiManager: WifiManager? = null
 //    var context: Context? = null
 
-    var notiID = 1
+//    var notiID = 1
 
     //    Intent i;
-    var settings: SharedPreferences? = null
+//    var settings: SharedPreferences? = null
 
     //    var general_startBoot: Boolean? = null
 //    var general_wifi: Boolean? = null
@@ -24,6 +29,7 @@ class MainBroadcastReceiver : BroadcastReceiver() {
 //    var event_sms: Boolean? = null
 //    var event_battery: Boolean? = null
 //    var connection_list: String? = null
+
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         Log.d(TAG, "onReceive.action=$action")
@@ -50,6 +56,52 @@ class MainBroadcastReceiver : BroadcastReceiver() {
             }
         }
 
+        val wifiManager =
+            context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+
+        if (action.equals(WifiManager.NETWORK_STATE_CHANGED_ACTION)) {
+
+//            val nwInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO)
+//            nwInfo.getState()
+//            val info = wifiManager.connectionInfo
+            Log.d(TAG, "findSSIDForWifiInfo " + getSSID(context.applicationContext))
+//            val summary = mutableListOf<String>()
+//                    summary.add(findSSIDForWifiInfo(wifiManager))
+//            sharedPreferences.edit().putString(
+//                StatusPreference.MQTT_STATUS.name,
+//                getSSID(context.applicationContext)
+////                        summary.toString()
+//            ).apply()
+
+//            wifiManager =
+//                getApplicationContext().getSystemService(Context.WIFI_SERVICE) as WifiManager?
+        }
+
+        if (action.equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+            cnt++
+            Log.d(TAG, "cnt $cnt")
+            val scanResults = wifiManager?.scanResults
+            val summary = mutableListOf<String>()
+            if (scanResults != null) {
+                scanResults.forEach {
+                    summary.add(it.SSID + ": " + it.level)
+                }
+            }
+
+            Log.d(TAG, "Scan OK $summary")
+//            val wifiState = wifiManager?.wifiState
+//            summary.forEach() {
+//                sharedPreferences.edit().putString(StatusPreference.MQTT_STATUS.name, it)
+//                    .apply()
+//            }
+            sharedPreferences.edit().putString(
+                StatusPreference.MQTT_STATUS.name,
+//                wifiState.toString()
+                summary.reduce { acc, s ->
+                    acc + "\n" + s
+                }
+            ).apply()
+        }
 //        if (action.equals("android.intent.action.SCREEN_ON")
 //                ||action.equals("android.intent.action.SCREEN_OFF")){
 //            i.putExtra("init","screen");
