@@ -2,8 +2,10 @@ package com.app.amigo
 
 import amigo.getSSID
 import android.Manifest
+import android.accounts.AccountManager
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
@@ -13,6 +15,8 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
@@ -21,6 +25,7 @@ import com.app.amigo.databinding.ActivityMainBinding
 import com.app.amigo.fragment.HomeFragment
 import com.app.amigo.fragment.MqttFragment
 import com.app.amigo.fragment.SettingFragment
+import com.google.android.gms.common.AccountPicker
 import com.google.android.material.tabs.TabLayoutMediator
 
 
@@ -44,6 +49,76 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         Log.d(TAG, "start")
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ((checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                    || (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+                    || (checkSelfPermission(Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED)
+                    || (checkSelfPermission(Manifest.permission.GET_ACCOUNTS) != PackageManager.PERMISSION_GRANTED)
+                    )
+        ) {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.GET_ACCOUNTS,
+                ), 0
+            )
+            //do something if have the permissions
+        }
+
+//        public void pickUserAccount() {
+//            /*This will list all available accounts on device without any filtering*/
+//            Intent intent = AccountPicker.newChooseAccountIntent(null, null,
+//            null, false, null, null, null, null);
+//            startActivityForResult(intent, REQUEST_CODE_PICK_ACCOUNT);
+//        }
+///*After manually selecting every app related account, I got its Account type using the code below*/
+//        @Override
+//        protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//            if (requestCode == REQUEST_CODE_PICK_ACCOUNT) {
+//                // Receiving a result from the AccountPicker
+//                if (resultCode == RESULT_OK) {
+//                    System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
+//                    System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
+//                } else if (resultCode == RESULT_CANCELED) {
+//                    Toast.makeText(this, R.string.pick_account, Toast.LENGTH_LONG).show();
+//                }
+//            }
+//        }
+
+        val aco = AccountPicker.AccountChooserOptions.Builder()
+            .setAllowableAccountsTypes(listOf("com.google"))
+            .build()
+        intent = AccountPicker.newChooseAccountIntent(aco) as Intent
+        startActivityForResult(intent,1111);
+//        val result: GoogleSignInResult = Auth.GoogleSignInApi.getSignInResultFromIntent(intent)
+//        val acct: GoogleSignInAccount = result.getSignInAccount()
+//        val personName = acct.displayName
+//        val personGivenName = acct.givenName
+//        val personFamilyName = acct.familyName
+//        val personEmail = acct.email
+//        val personId = acct.id
+//        val personPhoto: Uri = acct.photoUrl
+//        Log.d(TAG, "personName: ${personName}")
+//        Log.d(TAG, "personGivenName: ${personGivenName}")
+//        Log.d(TAG, "personFamilyName: ${personFamilyName}")
+//        Log.d(TAG, "personEmail: ${personEmail}")
+//        Log.d(TAG, "personId: ${personId}")
+//        Log.d(TAG, "personPhoto: ${personPhoto}")
+
+
+        val am =
+            getSystemService(Context.ACCOUNT_SERVICE) as AccountManager //AccountManager.get(applicationContext) // current Context
+        val tvInfo = findViewById<View>(R.id.textView1) as TextView
+        val accounts = am.accounts
+//        tvInfo.text = accounts.toList().toString()
+        for (account in accounts) {
+            tvInfo.append(account.name + "\n")
+            if (account.type.equals("com.google", ignoreCase = true)) {
+                //Что-то делаем
+            }
+        }
 
         object : FragmentStateAdapter(this) {
             private val homeFragment = HomeFragment()
@@ -74,20 +149,6 @@ class MainActivity : AppCompatActivity() {
             }
         }.attach()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ((checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-                    || (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
-                    || (checkSelfPermission(Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED)
-                    )
-        ) {
-            requestPermissions(
-                arrayOf(
-                    Manifest.permission.ACCESS_COARSE_LOCATION,
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_WIFI_STATE
-                ), 0
-            )
-            //do something if have the permissions
-        }
 
         wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
         Log.d(TAG, "wifiManager.deviceName " + wifiManager!!.deviceName())

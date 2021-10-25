@@ -27,12 +27,8 @@
         android:title="Start Service" />
 
     <PreferenceCategory>
-
         <com.app.amigo.fragment.LongSummaryPreference
             android:key="STATUS"
             android:title="Current Status" />
-
     </PreferenceCategory>
-
-
 </PreferenceScreen>
