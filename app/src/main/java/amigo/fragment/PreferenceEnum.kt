@@ -4,10 +4,12 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.text.InputType
 import android.text.TextUtils
+import android.util.Log
 import androidx.preference.*
 import com.app.amigo.DEFAULT_MRU
 import com.app.amigo.DEFAULT_MTU
 
+private var TAG = "@!@PreferenceEnum"
 
 internal const val TYPE_PASSWORD =
     InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
@@ -61,6 +63,11 @@ internal enum class StrPreference(override val defaultValue: String) : Preferenc
             fragment.findPreference<DropDownPreference>(name)!!.also {
                 it.value = value
             }
+//        } else if (this == ACCOUNT){
+//            Log.d(TAG, "setValue ACCOUNT")
+//            fragment.findPreference<EditTextPreference>(name)!!.also {
+//                this.(clickAccount())
+//            }
         } else {
             fragment.findPreference<EditTextPreference>(name)!!.also {
                 it.text = value
@@ -127,6 +134,7 @@ internal enum class DirPreference(override val defaultValue: String) : Preferenc
 
 internal enum class StatusPreference(override val defaultValue: String) :
     PreferenceWrapper<String> {
+    ACCOUNT(""),
     STATUS(""),
     MQTT_STATUS("");
 
@@ -214,6 +222,7 @@ internal enum class BoolPreference(override val defaultValue: Boolean) :
             if (this == HOME_CONNECTOR || this == MQTT_CONNECTOR) {
                 it.callChangeListener(getValue(it.sharedPreferences)) // запускает при старте если было запущено
             }
+            Log.d(TAG, "initPreference BoolPreference $fragment::$prefs::$this")
             initValue(fragment, prefs)
             it.isSingleLineTitle = false
         }

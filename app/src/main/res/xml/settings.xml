@@ -2,6 +2,39 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
+        android:key="SSTP_SERVER"
+        android:title="SSTP Server">
+
+        <EditTextPreference
+            android:key="HOME_HOST"
+            android:title="Host" />
+
+        <EditTextPreference
+            android:key="HOME_USER"
+            android:title="Username" />
+
+        <EditTextPreference
+            android:key="HOME_PASS"
+            android:title="Password" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:key="HOME_WIFI"
+        android:title="Home WiFi">
+
+        <SwitchPreference
+            android:key="SELECT_HOME_WIFI"
+            android:title="Disconnected In Selected Home WiFi" />
+
+        <MultiSelectListPreference
+            android:dependency="SELECT_HOME_WIFI"
+            android:key="HOME_WIFI_SUITES"
+            android:title="Select Home WiFi" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:key="SSL_LAYER"
         android:title="SSL Layer">
 

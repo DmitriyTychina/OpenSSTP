@@ -16,6 +16,9 @@ private const val CERT_DIR_REQUEST_CODE: Int = 0
 private const val LOG_DIR_REQUEST_CODE: Int = 1
 
 private val settingPreferences = arrayOf<PreferenceWrapper<*>>(
+    StrPreference.HOME_HOST,
+    StrPreference.HOME_USER,
+    StrPreference.HOME_PASS,
     IntPreference.SSL_PORT,
     StrPreference.SSL_VERSION,
     BoolPreference.SSL_DO_VERIFY,

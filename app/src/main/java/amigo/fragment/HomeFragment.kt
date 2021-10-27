@@ -1,6 +1,5 @@
 package com.app.amigo.fragment
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.SharedPreferences
@@ -9,16 +8,13 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
-import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.PreferenceManager
-import androidx.preference.SwitchPreferenceCompat
+import androidx.preference.*
 import com.app.amigo.*
+import com.app.amigo.R
+import com.google.android.gms.common.AccountPicker
 
 private val homePreferences = arrayOf<PreferenceWrapper<*>>(
-    StrPreference.HOME_HOST,
-    StrPreference.HOME_USER,
-    StrPreference.HOME_PASS,
+    StatusPreference.ACCOUNT,
     BoolPreference.HOME_CONNECTOR,
     StatusPreference.STATUS,
 )
@@ -44,8 +40,9 @@ class HomeFragment : PreferenceFragmentCompat() {
         }
         attachSharedPreferenceListener()
         attachConnectorListener()
+        attachAccountListener()
 
-        if (preferenceManager.sharedPreferences.getBoolean("HOME_CONNECTOR", false)){
+        if (preferenceManager.sharedPreferences.getBoolean("HOME_CONNECTOR", false)) {
             Log.d(TAG, "startVPN")
             startVPN()
         }
@@ -54,7 +51,7 @@ class HomeFragment : PreferenceFragmentCompat() {
 
     }
 
-    @SuppressLint("LongLogTag")
+    //    @SuppressLint("LongLogTag")
     private fun attachSharedPreferenceListener() {
         // for updating by both user and system
         sharedPreferenceListener =
@@ -109,8 +106,39 @@ class HomeFragment : PreferenceFragmentCompat() {
         }
     }
 
+//    @SuppressLint("WrongConstant")
+    private fun attachAccountListener() {
+        Log.d(TAG, "attachAccountListener")
+        findPreference<Preference>(StatusPreference.ACCOUNT.name)!!.also {
+//            it.shouldDisableView = false
+//            it.isEnabled = false
+            it.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+                val aco = AccountPicker.AccountChooserOptions.Builder()
+                    .setAlwaysShowAccountPicker(true)
+                    .setAllowableAccountsTypes(listOf("com.google"))
+                    .build()
+                val intent = AccountPicker.newChooseAccountIntent(aco) as Intent
+                startActivityForResult(intent, 1111);
+
+                true
+            }
+        }
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (resultCode == Activity.RESULT_OK) {
+        Log.d(TAG, "requestCode = $requestCode")
+        if (requestCode == 1111) {
+            // Receiving a result from the AccountPicker
+            if (resultCode == Activity.RESULT_OK) {
+                Log.d(TAG, "AccountPicker   Activity.RESULT_OK")
+//                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
+//                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                Log.d(TAG, "AccountPicker   Activity.RESULT_CANCELED")
+//                    Toast.makeText(this, R.string.pick_account, Toast.LENGTH_LONG).show();
+            }
+        }
+        else if (requestCode == 0 && resultCode == Activity.RESULT_OK) {
             startVpnService(VpnAction.ACTION_CONNECT)
         }
     }
@@ -124,9 +152,7 @@ class HomeFragment : PreferenceFragmentCompat() {
     }
 
     private fun checkPreferences(): Boolean {
-//        val prefs = PreferenceManager.getDefaultSharedPreferences(this.context)
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-//            preferenceManager.sharedPreferences
 
         StrPreference.HOME_HOST.getValue(prefs).also {
             if (TextUtils.isEmpty(it)) {
@@ -144,12 +170,12 @@ class HomeFragment : PreferenceFragmentCompat() {
 
         val doAddCerts = BoolPreference.SSL_DO_ADD_CERT.getValue(prefs)
         val version = StrPreference.SSL_VERSION.getValue(prefs)
-        val certDir = DirPreference.SSL_CERT_DIR.getValue(prefs)
         if (doAddCerts && version == "DEFAULT") {
             makeToast("Adding trusted certificates needs SSL version to be specified")
             return false
         }
 
+        val certDir = DirPreference.SSL_CERT_DIR.getValue(prefs)
         if (doAddCerts && certDir.isEmpty()) {
             makeToast("No certificates directory was selected")
             return false

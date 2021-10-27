@@ -30,7 +30,7 @@ internal class SstpVpnService : VpnService() {
         Log.d(TAG, "onCreate")
         if (broadcastReceiver == null) {
             val filter = IntentFilter()
-            filter.addAction("android.net.wifi.STATE_CHANGE")
+//            filter.addAction("android.net.wifi.STATE_CHANGE")
 //            filter.addAction("android.intent.action.PHONE_STATE")
 //            filter.addAction("android.intent.action.PHONE_STATE")
 //            filter.addAction("android.provider.Telephony.SMS_RECEIVED")

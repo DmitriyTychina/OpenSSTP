@@ -1,26 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <EditTextPreference
-        android:key="HOME_HOST"
-        android:title="Host" />
+    <PreferenceCategory>
+        <!--        android:key="GOOGLE_ACCOUNT"-->
+        <!--        android:title="Google Account [not necessary]">-->
 
-    <EditTextPreference
-        android:key="HOME_USER"
-        android:title="Username" />
-
-    <EditTextPreference
-        android:key="HOME_PASS"
-        android:title="Password" />
-
-    <SwitchPreference
-        android:key="SELECT_HOME_WIFI"
-        android:title="Enable Only Selected Home WiFi" />
-
-    <MultiSelectListPreference
-        android:dependency="SELECT_HOME_WIFI"
-        android:key="HOME_WIFI_SUITES"
-        android:title="Select Home WiFi" />
+        <com.app.amigo.fragment.LongSummaryPreference
+            android:key="ACCOUNT"
+            android:title="Google Account" />
+    </PreferenceCategory>
 
     <SwitchPreferenceCompat
         android:key="HOME_CONNECTOR"

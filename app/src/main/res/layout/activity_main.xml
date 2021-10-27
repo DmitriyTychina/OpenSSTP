@@ -21,8 +21,6 @@
     <TextView
         android:id="@+id/textView1"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_weight="0.2"
-        android:text="@string/textview" />
+        android:layout_height="wrap_content" />
 
 </LinearLayout>
