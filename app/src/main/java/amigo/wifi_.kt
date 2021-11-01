@@ -24,3 +24,18 @@ fun getSSID(context: Context): String {
 
 fun getIPself(context: Context) {
 }
+
+
+// из mainactivity
+//private var wifiManager: WifiManager? = null
+// oncreate
+//        wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+//        Log.d(TAG, "wifiManager.deviceName " + wifiManager!!.deviceName())
+//        Log.d(TAG, "getSSID " + getSSID(applicationContext))
+//        val wifiInfo = wifiManager!!.connectionInfo
+//        Toast.makeText(
+//            applicationContext,
+//            getSSID(applicationContext),
+//            Toast.LENGTH_LONG
+//        ).show()
+//        cm = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager

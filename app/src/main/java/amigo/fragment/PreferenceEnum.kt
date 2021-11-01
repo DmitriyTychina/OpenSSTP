@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.text.InputType
 import android.text.TextUtils
-import android.util.Log
 import androidx.preference.*
 import com.app.amigo.DEFAULT_MRU
 import com.app.amigo.DEFAULT_MTU
@@ -49,9 +48,9 @@ internal enum class StrPreference(override val defaultValue: String) : Preferenc
     HOME_HOST(""),
     HOME_USER(""),
     HOME_PASS(""),
-    MQTT_HOST(""),
-    MQTT_USER(""),
-    MQTT_PASS(""),
+//    MQTT_HOST(""),
+//    MQTT_USER(""),
+//    MQTT_PASS(""),
     SSL_VERSION("DEFAULT");
 
     override fun getValue(prefs: SharedPreferences): String {
@@ -83,7 +82,7 @@ internal enum class StrPreference(override val defaultValue: String) : Preferenc
             }
         } else {
             fragment.findPreference<EditTextPreference>(name)!!.also {
-                if (this == HOME_PASS || this == HOME_HOST || this == MQTT_PASS || this == MQTT_USER) {
+                if (this == HOME_PASS || this == HOME_HOST /*|| this == MQTT_PASS || this == MQTT_USER*/) {
                     it.summaryProvider = passwordSummaryProvider
                     it.setInputType(TYPE_PASSWORD)
                 } else {
@@ -135,8 +134,8 @@ internal enum class DirPreference(override val defaultValue: String) : Preferenc
 internal enum class StatusPreference(override val defaultValue: String) :
     PreferenceWrapper<String> {
     ACCOUNT(""),
-    STATUS(""),
-    MQTT_STATUS("");
+    STATUS("");
+//    MQTT_STATUS("");
 
     override fun getValue(prefs: SharedPreferences): String {
         return prefs.getString(name, defaultValue)!!
@@ -171,6 +170,7 @@ internal enum class StatusPreference(override val defaultValue: String) :
 internal enum class SetPreference(override val defaultValue: Set<String>) :
     PreferenceWrapper<Set<String>> {
     SSL_SUITES(setOf<String>());
+//    HOME_WIFI_SUITES(setOf<String>());
 
     override fun getValue(prefs: SharedPreferences): Set<String> {
         return prefs.getStringSet(name, defaultValue)!!
@@ -193,7 +193,8 @@ internal enum class SetPreference(override val defaultValue: Set<String>) :
 internal enum class BoolPreference(override val defaultValue: Boolean) :
     PreferenceWrapper<Boolean> {
     HOME_CONNECTOR(false),
-    MQTT_CONNECTOR(false),
+//    MQTT_CONNECTOR(false),
+//    SELECT_HOME_WIFI(false),
     SSL_DO_VERIFY(true),
     SSL_DO_ADD_CERT(false),
     SSL_DO_SELECT_SUITES(false),
@@ -219,10 +220,10 @@ internal enum class BoolPreference(override val defaultValue: Boolean) :
     //    @SuppressLint("LongLogTag")
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
         fragment.findPreference<TwoStatePreference>(name)!!.also {
-            if (this == HOME_CONNECTOR || this == MQTT_CONNECTOR) {
+            if (this == HOME_CONNECTOR /*|| this == MQTT_CONNECTOR*/) {
                 it.callChangeListener(getValue(it.sharedPreferences)) // запускает при старте если было запущено
             }
-            Log.d(TAG, "initPreference BoolPreference $fragment::$prefs::$this")
+//            Log.d(TAG, "initPreference BoolPreference $fragment::$prefs::$this")
             initValue(fragment, prefs)
             it.isSingleLineTitle = false
         }
@@ -231,7 +232,7 @@ internal enum class BoolPreference(override val defaultValue: Boolean) :
 
 internal enum class IntPreference(override val defaultValue: Int) : PreferenceWrapper<Int> {
     SSL_PORT(443),
-    MQTT_PORT(1883),
+//    MQTT_PORT(1883),
     PPP_MRU(DEFAULT_MRU),
     PPP_MTU(DEFAULT_MTU),
     IP_PREFIX(0),

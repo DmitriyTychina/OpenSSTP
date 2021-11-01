@@ -1,25 +1,21 @@
 package com.app.amigo.fragment
 
 import android.content.SharedPreferences
-import android.net.*
 import android.os.Bundle
-import android.text.TextUtils
 import android.util.Log
 import android.widget.Toast
-import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
-import androidx.preference.SwitchPreferenceCompat
 import com.app.amigo.R
 
 
 private val mqttPreferences = arrayOf<PreferenceWrapper<*>>(
-    StrPreference.MQTT_HOST,
-    IntPreference.MQTT_PORT,
-    StrPreference.MQTT_USER,
-    StrPreference.MQTT_PASS,
-    BoolPreference.MQTT_CONNECTOR,
-    StatusPreference.MQTT_STATUS,
+//    StrPreference.MQTT_HOST,
+//    IntPreference.MQTT_PORT,
+//    StrPreference.MQTT_USER,
+//    StrPreference.MQTT_PASS,
+//    BoolPreference.MQTT_CONNECTOR,
+//    StatusPreference.MQTT_STATUS,
 )
 
 class MqttFragment : PreferenceFragmentCompat() {
@@ -47,25 +43,24 @@ class MqttFragment : PreferenceFragmentCompat() {
 
     //    @SuppressLint("LongLogTag")
     private fun attachSharedPreferenceListener() {
-        // for updating by both user and system
-        sharedPreferenceListener =
-            SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
-                when (key) {
-                    BoolPreference.MQTT_CONNECTOR.name -> {
-                        BoolPreference.MQTT_CONNECTOR.also {
-                            it.setValue(this, it.getValue(prefs))
-//                        prefs.edit().putBoolean(BoolPreference.MQTT_CONNECTOR.name, it.getValue(prefs)).apply()
-                        }
-                    }
-                    StatusPreference.MQTT_STATUS.name -> {
-                        StatusPreference.MQTT_STATUS.also {
-                            it.setValue(this, it.getValue(prefs))
-                        }
-                    }
-                }
-            }
-        preferenceManager.sharedPreferences
-            .registerOnSharedPreferenceChangeListener(sharedPreferenceListener)
+//        // for updating by both user and system
+//        sharedPreferenceListener =
+//            SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+//                when (key) {
+//                    BoolPreference.MQTT_CONNECTOR.name -> {
+//                        BoolPreference.MQTT_CONNECTOR.also {
+//                            it.setValue(this, it.getValue(prefs))
+//                        }
+//                    }
+//                    StatusPreference.MQTT_STATUS.name -> {
+//                        StatusPreference.MQTT_STATUS.also {
+//                            it.setValue(this, it.getValue(prefs))
+//                        }
+//                    }
+//                }
+//            }
+//        preferenceManager.sharedPreferences
+//            .registerOnSharedPreferenceChangeListener(sharedPreferenceListener)
     }
 
     //    fun startVPN(): Boolean {
@@ -126,41 +121,41 @@ class MqttFragment : PreferenceFragmentCompat() {
 ////    .
 //    }
     private fun attachConnectorListener() {
-        // for disconnecting by user in MqttFragment
-        findPreference<SwitchPreferenceCompat>(BoolPreference.MQTT_CONNECTOR.name)!!.also {
-            it.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newState ->
-                val intent = VpnService.prepare(context)
-                if (newState == true) {
-//                    val ok: Boolean = true
-////                        intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
-////                    val wifiManager = context?.getSystemService(WIFI_SERVICE)
-////                    val wifiInfo = wifiManager.is
-////                    val ssid = wifiInfo.ssid
-//                    if (ok) {
-//                        val summary = mutableListOf<String>()
-//                        var wifissid = this.WifiConnector.currentSsid
-//                        summary.add("[Application.WIFI_SERVICE.length.toString]")
-//                        summary.add()
-//                        summary.add("")
-//                        Log.d(TAG, "Scan OK")
-////                        val list: List<ScanResult> = wifiManager.getScanResults()
-////                        this@MainActivity.showNetworks(list)
-////                        this@MainActivity.showNetworksDetails(list)
-//                        preferenceManager.sharedPreferences.edit().putString(
-//                            StatusPreference.MQTT_STATUS.name,
-//                            summary.toString()
-//                        ).apply()
-//                    } else {
-//                        Log.d(TAG, "Scan not OK")
-//                    }
-
-                    return@OnPreferenceChangeListener false
-                } else {
-//                    startVpnService(VpnAction.ACTION_DISCONNECT)
-                }
-                true
-            }
-        }
+//        // for disconnecting by user in MqttFragment
+//        findPreference<SwitchPreferenceCompat>(BoolPreference.MQTT_CONNECTOR.name)!!.also {
+//            it.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newState ->
+//                val intent = VpnService.prepare(context)
+//                if (newState == true) {
+////                    val ok: Boolean = true
+//////                        intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
+//////                    val wifiManager = context?.getSystemService(WIFI_SERVICE)
+//////                    val wifiInfo = wifiManager.is
+//////                    val ssid = wifiInfo.ssid
+////                    if (ok) {
+////                        val summary = mutableListOf<String>()
+////                        var wifissid = this.WifiConnector.currentSsid
+////                        summary.add("[Application.WIFI_SERVICE.length.toString]")
+////                        summary.add()
+////                        summary.add("")
+////                        Log.d(TAG, "Scan OK")
+//////                        val list: List<ScanResult> = wifiManager.getScanResults()
+//////                        this@MainActivity.showNetworks(list)
+//////                        this@MainActivity.showNetworksDetails(list)
+////                        preferenceManager.sharedPreferences.edit().putString(
+////                            StatusPreference.MQTT_STATUS.name,
+////                            summary.toString()
+////                        ).apply()
+////                    } else {
+////                        Log.d(TAG, "Scan not OK")
+////                    }
+//
+//                    return@OnPreferenceChangeListener false
+//                } else {
+////                    startVpnService(VpnAction.ACTION_DISCONNECT)
+//                }
+//                true
+//            }
+//        }
     }
 
 
@@ -181,13 +176,12 @@ class MqttFragment : PreferenceFragmentCompat() {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
 //            preferenceManager.sharedPreferences
 
-        StrPreference.MQTT_HOST.getValue(prefs).also {
-            if (TextUtils.isEmpty(it)) {
-                makeToast("Host is missing")
-                return false
-            }
-        }
+//        StrPreference.MQTT_HOST.getValue(prefs).also {
+//            if (TextUtils.isEmpty(it)) {
+//                makeToast("Host is missing")
+//                return false
+//            }
+//        }
         return true
     }
-
 }

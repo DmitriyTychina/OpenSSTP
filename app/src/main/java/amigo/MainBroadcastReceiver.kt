@@ -9,7 +9,8 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Log
 import androidx.preference.PreferenceManager
-import com.app.amigo.fragment.StatusPreference
+import java.text.SimpleDateFormat
+import java.util.*
 
 
 class MainBroadcastReceiver : BroadcastReceiver() {
@@ -56,10 +57,11 @@ class MainBroadcastReceiver : BroadcastReceiver() {
             }
         }
 
-        val wifiManager =
-            context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        if (action == WifiManager.WIFI_STATE_CHANGED_ACTION) {
 
-        if (action.equals(WifiManager.NETWORK_STATE_CHANGED_ACTION)) {
+        }
+
+        if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
 
 //            val nwInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO)
 //            nwInfo.getState()
@@ -77,30 +79,30 @@ class MainBroadcastReceiver : BroadcastReceiver() {
 //                getApplicationContext().getSystemService(Context.WIFI_SERVICE) as WifiManager?
         }
 
-        if (action.equals(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)) {
+        if (action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) {
+            val wifiManager =
+                context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             cnt++
-            Log.d(TAG, "cnt $cnt")
-            val scanResults = wifiManager?.scanResults
+            Log.d(TAG, "SCAN_RESULTS cnt $cnt")
+            val scanResults = wifiManager.scanResults
             val summary = mutableListOf<String>()
-            if (scanResults != null) {
-                scanResults.forEach {
-                    summary.add(it.SSID + ": " + it.level)
-                }
+            summary.add(SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()).format(Date()))
+            scanResults?.forEach {
+                summary.add(it.SSID + ": " + it.level)
             }
-
             Log.d(TAG, "Scan OK $summary")
 //            val wifiState = wifiManager?.wifiState
 //            summary.forEach() {
 //                sharedPreferences.edit().putString(StatusPreference.MQTT_STATUS.name, it)
 //                    .apply()
 //            }
-            sharedPreferences.edit().putString(
-                StatusPreference.MQTT_STATUS.name,
-//                wifiState.toString()
-                summary.reduce { acc, s ->
-                    acc + "\n" + s
-                }
-            ).apply()
+//            sharedPreferences.edit().putString(
+//                StatusPreference.MQTT_STATUS.name,
+////                wifiState.toString()
+//                summary.reduce { acc, s ->
+//                    acc + "\n" + s
+//                }
+//            ).apply()
         }
 //        if (action.equals("android.intent.action.SCREEN_ON")
 //                ||action.equals("android.intent.action.SCREEN_OFF")){

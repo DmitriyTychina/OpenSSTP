@@ -6,6 +6,8 @@ import androidx.preference.PreferenceManager
 import com.app.amigo.ControlClient
 import com.app.amigo.fragment.StatusPreference
 import org.chromium.base.Log
+import java.text.SimpleDateFormat
+import java.util.*
 
 internal class NetworkObserver(val parent: ControlClient) {
     private val manager = parent.vpnService.getSystemService(ConnectivityManager::class.java)
@@ -49,7 +51,7 @@ internal class NetworkObserver(val parent: ControlClient) {
 //    @SuppressLint("ServiceCast")
     private fun makeSummary(properties: LinkProperties): String {
         val summary = mutableListOf<String>()
-
+        summary.add(SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()).format(Date()))
         summary.add("[Assigned IP Address]")
         properties.linkAddresses.forEach {
             summary.add(it.address.hostAddress)

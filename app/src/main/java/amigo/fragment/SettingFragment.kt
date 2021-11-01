@@ -8,7 +8,6 @@ import androidx.preference.DropDownPreference
 import androidx.preference.MultiSelectListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
-import com.app.amigo.R
 import javax.net.ssl.SSLContext
 
 
@@ -19,6 +18,8 @@ private val settingPreferences = arrayOf<PreferenceWrapper<*>>(
     StrPreference.HOME_HOST,
     StrPreference.HOME_USER,
     StrPreference.HOME_PASS,
+//    BoolPreference.SELECT_HOME_WIFI,
+//    SetPreference.HOME_WIFI_SUITES,
     IntPreference.SSL_PORT,
     StrPreference.SSL_VERSION,
     BoolPreference.SSL_DO_VERIFY,
@@ -48,15 +49,15 @@ internal class SettingFragment : PreferenceFragmentCompat() {
     private var TAG = "@!@SettingFragment"
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         Log.d(TAG, "onCreatePreferences")
-        setPreferencesFromResource(R.xml.settings, rootKey)
+//        setPreferencesFromResource(R.xml.settings, rootKey)
+//        settingPreferences.forEach {
+//            it.initPreference(this, preferenceManager.sharedPreferences)
+//        }
+        attachHomeWiFiListener()
 
-        settingPreferences.forEach {
-            it.initPreference(this, preferenceManager.sharedPreferences)
-        }
-
-        initSSLPreferences()
-        setCertDirListener()
-        setLogDirListener()
+//        initSSLPreferences()
+//        setCertDirListener()
+//        setLogDirListener()
     }
 
     private fun initSSLPreferences() {
@@ -73,6 +74,30 @@ internal class SettingFragment : PreferenceFragmentCompat() {
             it.entries = params.cipherSuites
             it.entryValues = params.cipherSuites
         }
+    }
+
+    private fun attachHomeWiFiListener() {
+        // for disconnecting by user in HomeFragment
+//        findPreference<SwitchPreferenceCompat>(BoolPreference.SELECT_HOME_WIFI.name)!!.also {
+//            it.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newState ->
+//                if (newState == true) {
+//                    initHomeWiFiSuites()
+//                    true
+//                } else {
+//                    false
+////                    startVpnService(VpnAction.ACTION_DISCONNECT)
+//                }
+//            }
+//        }
+    }
+
+    private fun initHomeWiFiSuites() {
+//        val params = SSLContext.getDefault().supportedSSLParameters
+//
+//        findPreference<MultiSelectListPreference>(SetPreference.HOME_WIFI_SUITES.name)!!.also {
+//            it.entries = params.cipherSuites
+//            it.entryValues = params.cipherSuites
+//        }
     }
 
     private fun setCertDirListener() {

@@ -139,7 +139,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                         inform("An unexpected event occurred", exception)
                         Log.e(TAG, "!is SuicideException: " + exception)
                     }
-                    Log.e(TAG, "@!@***** 1 *****")
+//                    Log.e(TAG, "@!@***** 1 *****")
                     if (exception != null)
                         when (exception.localizedMessage) {
                             "com.app.amigo.DISCONNECT", "No address associated with hostname"/*, "Kill this client as intended"*/ -> {
@@ -148,24 +148,24 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                             }
                         }
                     // release ConnectivityManager resource
-                    Log.e(TAG, "observer " + observer)
+//                    Log.e(TAG, "observer " + observer)
                     observer?.close() // смотри внутрь
-                    Log.e(TAG, "@!@***** 2 *****")
+//                    Log.e(TAG, "@!@***** 2 *****")
 
                     // no more packets needed to be retrieved
                     ipTerminal.release()
-                    Log.e(TAG, "@!@***** 3 *****")
+//                    Log.e(TAG, "@!@***** 3 *****")
                     jobData?.cancel()
 //                    jobData?.join() //**
 //                    jobIncoming, jobControl, jobEncapsulate, jobData
-                    Log.e(TAG, "@!@***** 4 *****")
+//                    Log.e(TAG, "@!@***** 4 *****")
                     jobEncapsulate?.cancel()
 //                    jobEncapsulate?.join() //**
-                    Log.e(TAG, "@!@***** 5 *****")
+//                    Log.e(TAG, "@!@***** 5 *****")
                     // wait until SstpClient.sendLastGreeting() is invoked
 //                    jobIncoming?.cancel() //**
                     jobIncoming?.join()
-                    Log.e(TAG, "@!@***** 6 *****")
+//                    Log.e(TAG, "@!@***** 6 *****")
                     // wait until jobControl finishes sending messages
                     withTimeout(10_000) {
                         while (isActive) {
@@ -174,14 +174,14 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                             } else break
                         }
                     }
-                    Log.e(TAG, "@!@***** 7 *****")
+//                    Log.e(TAG, "@!@***** 7 *****")
                     // avoid jobControl being stuck with socket
                     sslTerminal.release()
-                    Log.e(TAG, "@!@***** 8 *****")
+//                    Log.e(TAG, "@!@***** 8 *****")
                     // ensure jobControl is completed
                     jobControl?.cancel()
 //                    jobControl?.join() //**
-                    Log.e(TAG, "@!@***** 9 *****")
+//                    Log.e(TAG, "@!@***** 9 *****")
 
                     if (exception != null) {
                         if (exception.localizedMessage != "com.app.amigo.DISCONNECT" &&
@@ -202,7 +202,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                     }
                     Log.d(TAG, "kill: bye")
                     bye()
-                    Log.e(TAG, "@!@***** 10 *****")
+//                    Log.e(TAG, "@!@***** 10 *****")
                 }
             }
         }
@@ -256,10 +256,10 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                 }
             }
             val totalTime = System.currentTimeMillis() - startTime
-            Log.e(TAG, "tryReconnection: result == $result")
-            Log.e(TAG, "measureTimeMillis: " + totalTime)
+//            Log.e(TAG, "tryReconnection: result == $result")
+//            Log.e(TAG, "measureTimeMillis: " + totalTime)
             val delay_ms = reconnectionSettings.intervalMillis - totalTime
-            Log.e(TAG, "delay_ms: " + delay_ms)
+//            Log.e(TAG, "delay_ms: " + delay_ms)
             if (delay_ms > 0) delay(delay_ms)
             if (result == null && !reconnectionSettings.isRetryable) {
                 inform("The last session cannot be cleaned up", null)

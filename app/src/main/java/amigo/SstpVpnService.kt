@@ -40,6 +40,7 @@ internal class SstpVpnService : VpnService() {
 //            filter.addAction(Intent.ACTION_BATTERY_CHANGED)
             filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
             filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
+            filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
             filter.addAction(Intent.ACTION_SCREEN_ON)
             filter.addAction(Intent.ACTION_SCREEN_OFF)
             broadcastReceiver = MainBroadcastReceiver()

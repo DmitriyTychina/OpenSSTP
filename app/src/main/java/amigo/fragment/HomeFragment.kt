@@ -1,5 +1,7 @@
-package com.app.amigo.fragment
+package amigo.fragment
 
+import amigo.unit.setPacketSettings
+import android.accounts.AccountManager
 import android.app.Activity
 import android.content.Intent
 import android.content.SharedPreferences
@@ -10,7 +12,8 @@ import android.util.Log
 import android.widget.Toast
 import androidx.preference.*
 import com.app.amigo.*
-import com.app.amigo.R
+import com.app.amigo.R.*
+import com.app.amigo.fragment.*
 import com.google.android.gms.common.AccountPicker
 
 private val homePreferences = arrayOf<PreferenceWrapper<*>>(
@@ -34,7 +37,7 @@ class HomeFragment : PreferenceFragmentCompat() {
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         Log.d(TAG, "onCreatePreferences")
-        setPreferencesFromResource(R.xml.home, rootKey)
+        setPreferencesFromResource(xml.home, rootKey)
         homePreferences.forEach {
             it.initPreference(this, preferenceManager.sharedPreferences)
         }
@@ -83,12 +86,12 @@ class HomeFragment : PreferenceFragmentCompat() {
         val intent = VpnService.prepare(context)
         if (intent != null) {
             startActivityForResult(intent, 0)
+            Log.d(TAG, "VpnService уже запущен")
         } else {
             onActivityResult(0, Activity.RESULT_OK, null)
+            Log.d(TAG, "startVpnService")
         }
-//        Log.d(TAG, "startVpnService")
 //        startVpnService(VpnAction.ACTION_CONNECT)
-
         return true
     }
 
@@ -106,7 +109,7 @@ class HomeFragment : PreferenceFragmentCompat() {
         }
     }
 
-//    @SuppressLint("WrongConstant")
+    //    @SuppressLint("WrongConstant")
     private fun attachAccountListener() {
         Log.d(TAG, "attachAccountListener")
         findPreference<Preference>(StatusPreference.ACCOUNT.name)!!.also {
@@ -119,7 +122,6 @@ class HomeFragment : PreferenceFragmentCompat() {
                     .build()
                 val intent = AccountPicker.newChooseAccountIntent(aco) as Intent
                 startActivityForResult(intent, 1111);
-
                 true
             }
         }
@@ -130,15 +132,29 @@ class HomeFragment : PreferenceFragmentCompat() {
         if (requestCode == 1111) {
             // Receiving a result from the AccountPicker
             if (resultCode == Activity.RESULT_OK) {
-                Log.d(TAG, "AccountPicker   Activity.RESULT_OK")
+//                Log.d(TAG, "AccountPicker   Activity.RESULT_OK")
+
+//                val am =
+//                    context?.getSystemService(Context.ACCOUNT_SERVICE) as AccountManager //AccountManager.get(applicationContext) // current Context
+//                val AccInfo = findViewById<View>(R.id.textView1) as TextView
+//                val accounts = am.accounts
+//        tvInfo.text = accounts.toList().toString()
+                val account = data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
+                if (/*(data != null) && */(account != null)) {
+//                    if (checkPreferences()){
+//                        //диалог подтверждающий замену рабочих настроек
+                    setPacketSettings(account,  PreferenceManager.getDefaultSharedPreferences(context)) // загружаем настройки для опреденного аккаунта гугл
+//                    }
+                }
+
+
 //                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
 //                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
             } else if (resultCode == Activity.RESULT_CANCELED) {
                 Log.d(TAG, "AccountPicker   Activity.RESULT_CANCELED")
 //                    Toast.makeText(this, R.string.pick_account, Toast.LENGTH_LONG).show();
             }
-        }
-        else if (requestCode == 0 && resultCode == Activity.RESULT_OK) {
+        } else if (requestCode == 0 && resultCode == Activity.RESULT_OK) {
             startVpnService(VpnAction.ACTION_CONNECT)
         }
     }
@@ -161,6 +177,13 @@ class HomeFragment : PreferenceFragmentCompat() {
             }
         }
 
+//        val SelectHomeWiFi = BoolPreference.SELECT_HOME_WIFI.getValue(prefs)
+//        val homeWiFisuites = SetPreference.HOME_WIFI_SUITES.getValue(prefs)
+//        if (SelectHomeWiFi && homeWiFisuites.isEmpty()) {
+//            makeToast("No Home WiFi suite was selected")
+//            return false
+//        }
+
         IntPreference.SSL_PORT.getValue(prefs).also {
             if (it !in 0..65535) {
                 makeToast("The given port is out of 0-65535")
@@ -182,8 +205,8 @@ class HomeFragment : PreferenceFragmentCompat() {
         }
 
         val doSelectSuites = BoolPreference.SSL_DO_SELECT_SUITES.getValue(prefs)
-        val suites = SetPreference.SSL_SUITES.getValue(prefs)
-        if (doSelectSuites && suites.isEmpty()) {
+        val SSLsuites = SetPreference.SSL_SUITES.getValue(prefs)
+        if (doSelectSuites && SSLsuites.isEmpty()) {
             makeToast("No cipher suite was selected")
             return false
         }
