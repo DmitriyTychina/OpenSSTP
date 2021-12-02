@@ -1,6 +1,5 @@
 package com.app.amigo.fragment
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -9,19 +8,22 @@ import androidx.preference.PreferenceManager
 import com.app.amigo.R
 
 
+
+
+
 private val mqttPreferences = arrayOf<PreferenceWrapper<*>>(
-//    StrPreference.MQTT_HOST,
-//    IntPreference.MQTT_PORT,
-//    StrPreference.MQTT_USER,
-//    StrPreference.MQTT_PASS,
-//    BoolPreference.MQTT_CONNECTOR,
-//    StatusPreference.MQTT_STATUS,
+    StrPreference.MQTT_HOST,
+    IntPreference.MQTT_PORT,
+    StrPreference.MQTT_USER,
+    StrPreference.MQTT_PASS,
+    BoolPreference.MQTT_CONNECTOR,
+    StatusPreference.MQTT_STATUS,
 )
 
 class MqttFragment : PreferenceFragmentCompat() {
     private var TAG = "@!@MqttFragment"
 
-    private lateinit var sharedPreferenceListener: SharedPreferences.OnSharedPreferenceChangeListener // for avoiding GC
+//    private lateinit var sharedPreferenceListener: SharedPreferences.OnSharedPreferenceChangeListener
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         Log.d(TAG, "onCreatePreferences")
@@ -29,7 +31,7 @@ class MqttFragment : PreferenceFragmentCompat() {
         mqttPreferences.forEach {
             it.initPreference(this, preferenceManager.sharedPreferences)
         }
-        attachSharedPreferenceListener()
+//        attachSharedPreferenceListener()
         attachConnectorListener()
 
 //        if (preferenceManager.sharedPreferences.getBoolean("MQTT_CONNECTOR", false)){
@@ -42,7 +44,7 @@ class MqttFragment : PreferenceFragmentCompat() {
     }
 
     //    @SuppressLint("LongLogTag")
-    private fun attachSharedPreferenceListener() {
+//    private fun attachSharedPreferenceListener() {
 //        // for updating by both user and system
 //        sharedPreferenceListener =
 //            SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
@@ -61,7 +63,7 @@ class MqttFragment : PreferenceFragmentCompat() {
 //            }
 //        preferenceManager.sharedPreferences
 //            .registerOnSharedPreferenceChangeListener(sharedPreferenceListener)
-    }
+//    }
 
     //    fun startVPN(): Boolean {
 //        if (!checkPreferences()) {
@@ -157,8 +159,6 @@ class MqttFragment : PreferenceFragmentCompat() {
 //            }
 //        }
     }
-
-
 
 //    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
 //        if (resultCode == Activity.RESULT_OK) {

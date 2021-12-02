@@ -12,7 +12,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.preference.*
 import com.app.amigo.*
-import com.app.amigo.R.*
+import com.app.amigo.R
 import com.app.amigo.fragment.*
 import com.google.android.gms.common.AccountPicker
 
@@ -28,7 +28,7 @@ class HomeFragment : PreferenceFragmentCompat() {
 //    init {
 //        prefs = preferenceManager.sharedPreferences
 //        homePreferences.forEach {
-//            it.initPreference(this, preferenceManager.sharedPreferences)
+//            it.initPreference(this, prefs /*preferenceManager.sharedPreferences*/)
 //        }
 //        startVPN()
 //    }
@@ -37,15 +37,15 @@ class HomeFragment : PreferenceFragmentCompat() {
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         Log.d(TAG, "onCreatePreferences")
-        setPreferencesFromResource(xml.home, rootKey)
+        setPreferencesFromResource(R.xml.home, rootKey)
         homePreferences.forEach {
             it.initPreference(this, preferenceManager.sharedPreferences)
         }
-        attachSharedPreferenceListener()
-        attachConnectorListener()
-        attachAccountListener()
-
-        if (preferenceManager.sharedPreferences.getBoolean("HOME_CONNECTOR", false)) {
+        attachSharedPreferenceChangeListener()
+        attachConnectorChangeListener()
+        attachAccountClickListener()
+//        val linearLayout = findViewById<PreferenceScreen>(R.id.SwitchPreferenceCompat)
+        if (BoolPreference.HOME_CONNECTOR.getValue(preferenceManager.sharedPreferences)) {
             Log.d(TAG, "startVPN")
             startVPN()
         }
@@ -55,49 +55,54 @@ class HomeFragment : PreferenceFragmentCompat() {
     }
 
     //    @SuppressLint("LongLogTag")
-    private fun attachSharedPreferenceListener() {
+    private fun attachSharedPreferenceChangeListener() {
         // for updating by both user and system
         sharedPreferenceListener =
             SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
                 when (key) {
                     BoolPreference.HOME_CONNECTOR.name -> {
                         BoolPreference.HOME_CONNECTOR.also {
-                            it.setValue(this, it.getValue(prefs))
-//                        prefs.edit().putBoolean(BoolPreference.HOME_CONNECTOR.name, it.getValue(prefs)).apply()
+                            it.setValueFragment(it.getValue(prefs))
+//  delete                      prefs.edit().putBoolean(BoolPreference.HOME_CONNECTOR.name, it.getValue(prefs)).apply()
                         }
                     }
                     StatusPreference.STATUS.name -> {
                         StatusPreference.STATUS.also {
-                            it.setValue(this, it.getValue(prefs))
+                            it.setValueFragment(it.getValue(prefs))
                         }
                     }
+////                    StatusPreference.ACCOUNT.name -> {
+////                        StatusPreference.ACCOUNT.also {
+////                            it.setValue(/*this,*/ it.getValue(prefs))
+////                        }
+////                    }
                 }
             }
-        preferenceManager.sharedPreferences
-            .registerOnSharedPreferenceChangeListener(sharedPreferenceListener)
+        preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceListener)
     }
 
-    fun startVPN(): Boolean {
+    private fun startVPN(): Boolean {
         if (!checkPreferences()) {
-//            BoolPreference.HOME_CONNECTOR.setValue(this,false)
             Log.d(TAG, "checkPreferences=false")
+            StatusPreference.STATUS.setValue(preferenceManager.sharedPreferences,  "Неверно заданы настройки")
             return false
         }
         val intent = VpnService.prepare(context)
         if (intent != null) {
-            startActivityForResult(intent, 0)
             Log.d(TAG, "VpnService уже запущен")
+            startActivityForResult(intent, 0)
         } else {
-            onActivityResult(0, Activity.RESULT_OK, null)
             Log.d(TAG, "startVpnService")
+//            StatusPreference.STATUS.setValue(preferenceManager.sharedPreferences,  "")
+            onActivityResult(0, Activity.RESULT_OK, null)
         }
-//        startVpnService(VpnAction.ACTION_CONNECT)
         return true
     }
 
-    private fun attachConnectorListener() {
+    private fun attachConnectorChangeListener() {
         // for disconnecting by user in HomeFragment
-        findPreference<SwitchPreferenceCompat>(BoolPreference.HOME_CONNECTOR.name)!!.also {
+        Log.d(TAG, "attachConnectorChangeListener")
+        findPreference<TwoStatePreference>(BoolPreference.HOME_CONNECTOR.name)!!.also {
             it.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newState ->
                 if (newState == true) {
                     return@OnPreferenceChangeListener startVPN()
@@ -110,7 +115,7 @@ class HomeFragment : PreferenceFragmentCompat() {
     }
 
     //    @SuppressLint("WrongConstant")
-    private fun attachAccountListener() {
+    private fun attachAccountClickListener() {
         Log.d(TAG, "attachAccountListener")
         findPreference<Preference>(StatusPreference.ACCOUNT.name)!!.also {
 //            it.shouldDisableView = false
@@ -128,26 +133,17 @@ class HomeFragment : PreferenceFragmentCompat() {
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        Log.d(TAG, "requestCode = $requestCode")
+//        Log.d(TAG, "requestCode = $requestCode")
         if (requestCode == 1111) {
             // Receiving a result from the AccountPicker
             if (resultCode == Activity.RESULT_OK) {
-//                Log.d(TAG, "AccountPicker   Activity.RESULT_OK")
-
-//                val am =
-//                    context?.getSystemService(Context.ACCOUNT_SERVICE) as AccountManager //AccountManager.get(applicationContext) // current Context
-//                val AccInfo = findViewById<View>(R.id.textView1) as TextView
-//                val accounts = am.accounts
-//        tvInfo.text = accounts.toList().toString()
                 val account = data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
-                if (/*(data != null) && */(account != null)) {
+                if (account != null) {
 //                    if (checkPreferences()){
 //                        //диалог подтверждающий замену рабочих настроек
                     setPacketSettings(account,  PreferenceManager.getDefaultSharedPreferences(context)) // загружаем настройки для опреденного аккаунта гугл
 //                    }
                 }
-
-
 //                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
 //                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
             } else if (resultCode == Activity.RESULT_CANCELED) {
@@ -177,12 +173,12 @@ class HomeFragment : PreferenceFragmentCompat() {
             }
         }
 
-//        val SelectHomeWiFi = BoolPreference.SELECT_HOME_WIFI.getValue(prefs)
-//        val homeWiFisuites = SetPreference.HOME_WIFI_SUITES.getValue(prefs)
-//        if (SelectHomeWiFi && homeWiFisuites.isEmpty()) {
-//            makeToast("No Home WiFi suite was selected")
-//            return false
-//        }
+        val SelectHomeWiFi = BoolPreference.SELECT_HOME_WIFI.getValue(prefs)
+        val homeWiFisuites = SetPreference.HOME_WIFI_SUITES.getValue(prefs)
+        if (SelectHomeWiFi && homeWiFisuites.isEmpty()) {
+            makeToast("No Home WiFi suite was selected")
+            return false
+        }
 
         IntPreference.SSL_PORT.getValue(prefs).also {
             if (it !in 0..65535) {
@@ -205,8 +201,8 @@ class HomeFragment : PreferenceFragmentCompat() {
         }
 
         val doSelectSuites = BoolPreference.SSL_DO_SELECT_SUITES.getValue(prefs)
-        val SSLsuites = SetPreference.SSL_SUITES.getValue(prefs)
-        if (doSelectSuites && SSLsuites.isEmpty()) {
+        val suites = SetPreference.SSL_SUITES.getValue(prefs)
+        if (doSelectSuites && suites.isEmpty()) {
             makeToast("No cipher suite was selected")
             return false
         }
@@ -276,4 +272,3 @@ class HomeFragment : PreferenceFragmentCompat() {
         return true
     }
 }
-

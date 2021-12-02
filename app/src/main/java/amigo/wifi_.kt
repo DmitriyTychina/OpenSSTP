@@ -5,9 +5,12 @@ import android.content.Context
 import android.net.wifi.WifiManager
 import android.text.TextUtils
 import android.util.Log
-import com.app.amigo.deviceName
 
 val TAG = "@!@wifi_kt"
+
+fun WifiManager.deviceName(): String = connectionInfo.ssid.run {
+    if (this.contains("<unknown ssid>")) "UNKNOWN" else this
+}
 
 @SuppressLint("MissingPermission")
 fun getSSID(context: Context): String {

@@ -4,8 +4,6 @@ import amigo.fragment.HomeFragment
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.net.ConnectivityManager
-import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -17,15 +15,9 @@ import com.app.amigo.fragment.MqttFragment
 import com.app.amigo.fragment.SettingFragment
 import com.google.android.material.tabs.TabLayoutMediator
 
-
-fun WifiManager.deviceName(): String = connectionInfo.ssid.run {
-    if (this.contains("<unknown ssid>")) "UNKNOWN" else this
-}
-
-
 class MainActivity : AppCompatActivity() {
     private var TAG = "@!@MainActivity"
-    lateinit var cm: ConnectivityManager
+//    lateinit var cm: ConnectivityManager
 
     @SuppressLint("NewApi")
 
@@ -41,7 +33,6 @@ class MainActivity : AppCompatActivity() {
             private val homeFragment = HomeFragment()
             private val settingFragment = SettingFragment()
             private val mqttFragment = MqttFragment()
-
             //            override fun getItemCount() = 2
             override fun getItemCount() = 3
 
@@ -69,7 +60,9 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && ((checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
                     || (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED)
                     || (checkSelfPermission(Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED)
+                    || (checkSelfPermission(Manifest.permission.ACCESS_NETWORK_STATE) != PackageManager.PERMISSION_GRANTED)
                     || (checkSelfPermission(Manifest.permission.GET_ACCOUNTS) != PackageManager.PERMISSION_GRANTED)
+//                    || (checkSelfPermission(Manifest.permission.CHANGE_WIFI_STATE) != PackageManager.PERMISSION_GRANTED)
                     )
         ) {
             requestPermissions(
@@ -77,14 +70,15 @@ class MainActivity : AppCompatActivity() {
                     Manifest.permission.ACCESS_COARSE_LOCATION,
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.ACCESS_NETWORK_STATE,
                     Manifest.permission.GET_ACCOUNTS,
+//                    Manifest.permission.CHANGE_WIFI_STATE,
                 ), 0
             )
             //do something if have the permissions
         }
 //        cm = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
     }
-
 
 //    val networkRequest = NetworkRequest.Builder()
 //        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)

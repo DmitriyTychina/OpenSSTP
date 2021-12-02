@@ -15,27 +15,33 @@ internal const val TYPE_PASSWORD =
 
 internal interface PreferenceWrapper<T> {
     val name: String
-
     val defaultValue: T
+    var fragment: PreferenceFragmentCompat?
 
     fun getValue(prefs: SharedPreferences): T
 
     fun setValue(
-        fragment: PreferenceFragmentCompat,
-        value: T
+        prefs: SharedPreferences,
+        value: T,
     ) // Use Preference to ensure its summary is updated.
 
-    fun initValue(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
+    fun initValue(Fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
+        fragment = Fragment
         if (!prefs.contains(name)) {
-            setValue(fragment, defaultValue)
+            setValue(prefs, defaultValue)
+//            Log.d(TAG, "$name=def=$defaultValue")
+        } else {
+            val value = getValue(prefs)
+            setValue(prefs, value)
+//            Log.d(TAG, "$name=$value")
         }
     }
 
     fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences)
 
-    fun restoreDefault(fragment: PreferenceFragmentCompat) {
-        setValue(fragment, defaultValue)
-    }
+//    fun restoreDefault(/*fragment: PreferenceFragmentCompat*/) {
+//        setValue(prefs, defaultValue)
+//    }
 }
 
 private fun EditTextPreference.setInputType(type: Int) {
@@ -44,59 +50,63 @@ private fun EditTextPreference.setInputType(type: Int) {
     }
 }
 
-internal enum class StrPreference(override val defaultValue: String) : PreferenceWrapper<String> {
+internal enum class StrPreference(
+    override val defaultValue: String,
+    override var fragment: PreferenceFragmentCompat? = null,
+) : PreferenceWrapper<String> {
     HOME_HOST(""),
     HOME_USER(""),
     HOME_PASS(""),
-//    MQTT_HOST(""),
-//    MQTT_USER(""),
-//    MQTT_PASS(""),
+    MQTT_HOST(""),
+    MQTT_USER(""),
+    MQTT_PASS(""),
     SSL_VERSION("DEFAULT");
 
     override fun getValue(prefs: SharedPreferences): String {
         return prefs.getString(name, defaultValue)!!
     }
 
-    override fun setValue(fragment: PreferenceFragmentCompat, value: String) {
+    override fun setValue(prefs: SharedPreferences, value: String) {
         if (this == SSL_VERSION) {
-            fragment.findPreference<DropDownPreference>(name)!!.also {
+            fragment?.findPreference<DropDownPreference>(name)?.also {
                 it.value = value
             }
-//        } else if (this == ACCOUNT){
-//            Log.d(TAG, "setValue ACCOUNT")
-//            fragment.findPreference<EditTextPreference>(name)!!.also {
-//                this.(clickAccount())
-//            }
         } else {
-            fragment.findPreference<EditTextPreference>(name)!!.also {
+            fragment?.findPreference<EditTextPreference>(name)?.also {
                 it.text = value
             }
+        }
+        prefs.edit().also { editor ->
+            editor.putString(name, value)
+            editor.apply()
         }
     }
 
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
         if (this == SSL_VERSION) {
-            fragment.findPreference<DropDownPreference>(name)!!.also {
+            fragment.findPreference<DropDownPreference>(name)?.also {
                 it.summaryProvider = ListPreference.SimpleSummaryProvider.getInstance()
-                initValue(fragment, prefs)
+//                initValue(fragment, prefs)
             }
         } else {
-            fragment.findPreference<EditTextPreference>(name)!!.also {
-                if (this == HOME_PASS || this == HOME_HOST /*|| this == MQTT_PASS || this == MQTT_USER*/) {
+            fragment.findPreference<EditTextPreference>(name)?.also {
+                if (this == HOME_PASS || this == HOME_HOST || this == MQTT_PASS || this == MQTT_USER) {
                     it.summaryProvider = passwordSummaryProvider
                     it.setInputType(TYPE_PASSWORD)
                 } else {
                     it.summaryProvider = normalSummaryProvider
                     it.setInputType(InputType.TYPE_CLASS_TEXT)
                 }
-
-                initValue(fragment, prefs)
             }
         }
+        initValue(fragment, prefs)
     }
 }
 
-internal enum class DirPreference(override val defaultValue: String) : PreferenceWrapper<String> {
+internal enum class DirPreference(
+    override val defaultValue: String,
+    override var fragment: PreferenceFragmentCompat? = null,
+) : PreferenceWrapper<String> {
     SSL_CERT_DIR(""),
     LOG_DIR("");
 
@@ -104,19 +114,18 @@ internal enum class DirPreference(override val defaultValue: String) : Preferenc
         return prefs.getString(name, defaultValue)!!
     }
 
-    override fun setValue(fragment: PreferenceFragmentCompat, value: String) {
-        fragment.findPreference<Preference>(name)!!.also {
-            it.sharedPreferences.edit().also { editor ->
-                editor.putString(name, value)
-                editor.apply()
-            }
-
+    override fun setValue(prefs: SharedPreferences, value: String) {
+        fragment?.findPreference<Preference>(name)?.also {
             it.provideSummary(value)
+        }
+        prefs.edit().also { editor ->
+            editor.putString(name, value)
+            editor.apply()
         }
     }
 
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
-        fragment.findPreference<Preference>(name)!!.also {
+        fragment.findPreference<Preference>(name)?.also {
             it.provideSummary(getValue(it.sharedPreferences))
             initValue(fragment, prefs)
         }
@@ -131,70 +140,101 @@ internal enum class DirPreference(override val defaultValue: String) : Preferenc
     }
 }
 
-internal enum class StatusPreference(override val defaultValue: String) :
+internal enum class StatusPreference(
+    override val defaultValue: String,
+    override var fragment: PreferenceFragmentCompat? = null,
+) :
     PreferenceWrapper<String> {
     ACCOUNT(""),
-    STATUS("");
-//    MQTT_STATUS("");
+    STATUS(""),
+    MQTT_STATUS("");
 
     override fun getValue(prefs: SharedPreferences): String {
         return prefs.getString(name, defaultValue)!!
     }
 
-    override fun setValue(fragment: PreferenceFragmentCompat, value: String) {
-        fragment.findPreference<Preference>(name)!!.also {
-            it.sharedPreferences.edit().also { editor ->
-                editor.putString(name, value)
-                editor.apply()
-            }
+    override fun setValue(prefs: SharedPreferences, value: String) {
+        fragment?.findPreference<Preference>(name)?.also {
+            it.provideSummary(value)
+        }
+//        if (this == ACCOUNT) {
+//        prefs.edit().putString(StatusPreference.STATUS.name, it).apply()
+        prefs.edit().also { editor ->
+            editor.putString(name, value)
+            editor.apply()
+        }
+//        }
+    }
+
+    fun setValueFragment(value: String) {
+        fragment?.findPreference<Preference>(name)?.also {
             it.provideSummary(value)
         }
     }
 
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
-        fragment.findPreference<Preference>(name)!!.also {
+        fragment.findPreference<Preference>(name)?.also {
             it.provideSummary(getValue(it.sharedPreferences))
             initValue(fragment, prefs)
         }
     }
 
     private fun Preference.provideSummary(value: String) {
-        summary = if (TextUtils.isEmpty(value)) {
-            "[No Connection Established]"
-        } else {
-            value
-        }
+        summary =
+            if (TextUtils.isEmpty(value)) {
+                if (name == "ACCOUNT") {
+                    "[No Changed Account]"
+                } else {
+                    "[No Connection Established]"
+                }
+            } else {
+                value
+            }
     }
 }
 
-internal enum class SetPreference(override val defaultValue: Set<String>) :
+internal enum class SetPreference(
+    override val defaultValue: Set<String>,
+    override var fragment: PreferenceFragmentCompat? = null,
+) :
     PreferenceWrapper<Set<String>> {
-    SSL_SUITES(setOf<String>());
-//    HOME_WIFI_SUITES(setOf<String>());
+    SSL_SUITES(setOf<String>()),
+    HOME_WIFI_SUITES(setOf<String>());
 
     override fun getValue(prefs: SharedPreferences): Set<String> {
         return prefs.getStringSet(name, defaultValue)!!
     }
 
-    override fun setValue(fragment: PreferenceFragmentCompat, value: Set<String>) {
-        fragment.findPreference<MultiSelectListPreference>(name)!!.also {
-            it.values = value
+    override fun setValue(prefs: SharedPreferences, value: Set<String>) {
+        if (this == SSL_SUITES || this == HOME_WIFI_SUITES) {
+            fragment?.findPreference<MultiSelectListPreference>(name)?.also {
+                it.values = value
+            }
+        }
+        prefs.edit().also { editor ->
+            editor.putStringSet(name, value)
+            editor.apply()
         }
     }
 
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
-        fragment.findPreference<MultiSelectListPreference>(name)!!.also {
-            it.summaryProvider = suitesSummaryProvider
-            initValue(fragment, prefs)
+        if (this == SSL_SUITES) {
+            fragment.findPreference<MultiSelectListPreference>(name)?.also {
+                it.summaryProvider = suitesSummaryProvider
+                initValue(fragment, prefs)
+            }
         }
     }
 }
 
-internal enum class BoolPreference(override val defaultValue: Boolean) :
+internal enum class BoolPreference(
+    override val defaultValue: Boolean,
+    override var fragment: PreferenceFragmentCompat? = null,
+) :
     PreferenceWrapper<Boolean> {
     HOME_CONNECTOR(false),
-//    MQTT_CONNECTOR(false),
-//    SELECT_HOME_WIFI(false),
+    MQTT_CONNECTOR(false),
+    SELECT_HOME_WIFI(false),
     SSL_DO_VERIFY(true),
     SSL_DO_ADD_CERT(false),
     SSL_DO_SELECT_SUITES(false),
@@ -211,16 +251,26 @@ internal enum class BoolPreference(override val defaultValue: Boolean) :
         return prefs.getBoolean(name, defaultValue)
     }
 
-    override fun setValue(fragment: PreferenceFragmentCompat, value: Boolean) {
-        fragment.findPreference<TwoStatePreference>(name)!!.also {
+    override fun setValue(prefs: SharedPreferences, value: Boolean) {
+        fragment?.findPreference<TwoStatePreference>(name)?.also {
+            it.isChecked = value
+        }
+        prefs.edit().also { editor ->
+            editor.putBoolean(name, value)
+            editor.apply()
+        }
+    }
+
+    fun setValueFragment(value: Boolean) {
+        fragment?.findPreference<TwoStatePreference>(name)?.also {
             it.isChecked = value
         }
     }
 
     //    @SuppressLint("LongLogTag")
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
-        fragment.findPreference<TwoStatePreference>(name)!!.also {
-            if (this == HOME_CONNECTOR /*|| this == MQTT_CONNECTOR*/) {
+        fragment.findPreference<TwoStatePreference>(name)?.also {
+            if (this == HOME_CONNECTOR || this == MQTT_CONNECTOR) {
                 it.callChangeListener(getValue(it.sharedPreferences)) // запускает при старте если было запущено
             }
 //            Log.d(TAG, "initPreference BoolPreference $fragment::$prefs::$this")
@@ -230,9 +280,12 @@ internal enum class BoolPreference(override val defaultValue: Boolean) :
     }
 }
 
-internal enum class IntPreference(override val defaultValue: Int) : PreferenceWrapper<Int> {
+internal enum class IntPreference(
+    override val defaultValue: Int,
+    override var fragment: PreferenceFragmentCompat? = null,
+) : PreferenceWrapper<Int> {
     SSL_PORT(443),
-//    MQTT_PORT(1883),
+    MQTT_PORT(1883),
     PPP_MRU(DEFAULT_MRU),
     PPP_MTU(DEFAULT_MTU),
     IP_PREFIX(0),
@@ -245,14 +298,18 @@ internal enum class IntPreference(override val defaultValue: Int) : PreferenceWr
         return prefs.getString(name, defaultValue.toString())!!.toIntOrNull() ?: defaultValue
     }
 
-    override fun setValue(fragment: PreferenceFragmentCompat, value: Int) {
-        fragment.findPreference<EditTextPreference>(name)!!.also {
+    override fun setValue(prefs: SharedPreferences, value: Int) {
+        fragment?.findPreference<EditTextPreference>(name)?.also {
             it.text = value.toString()
+        }
+        prefs.edit().also { editor ->
+            editor.putString(name, value.toString())
+            editor.apply()
         }
     }
 
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
-        fragment.findPreference<EditTextPreference>(name)!!.also {
+        fragment.findPreference<EditTextPreference>(name)?.also {
             it.summaryProvider = if (this == IP_PREFIX) {
                 it.dialogMessage = "0 means prefix length will be inferred"
                 zeroDefaultSummaryProvider

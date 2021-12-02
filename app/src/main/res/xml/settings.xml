@@ -28,7 +28,6 @@
             android:title="Disconnected In Selected Home WiFi" />
 
         <MultiSelectListPreference
-            android:dependency="SELECT_HOME_WIFI"
             android:key="HOME_WIFI_SUITES"
             android:title="Select Home WiFi" />
 

@@ -143,7 +143,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                     if (exception != null)
                         when (exception.localizedMessage) {
                             "com.app.amigo.DISCONNECT", "No address associated with hostname"/*, "Kill this client as intended"*/ -> {
-                                prefs.edit().putString(StatusPreference.STATUS.name, "").apply()
+                                StatusPreference.STATUS.setValue(prefs,  "")
 //                                observer?.close()
                             }
                         }
@@ -212,7 +212,8 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
         Log.d(TAG, "bye")
         inform("Terminate VPN connection", null)
         logStream?.close()
-        prefs.edit().putBoolean(BoolPreference.HOME_CONNECTOR.name, false).apply()
+        BoolPreference.HOME_CONNECTOR.setValueFragment(false)
+//        prefs.edit().putBoolean(BoolPreference.HOME_CONNECTOR.name, false).apply()
 //        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
 //            vpnService.startForegroundService(
 //                Intent(
@@ -233,7 +234,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
         vpnService.stopSelf()
 //        vpnService.stopForeground(true)
 //        vpnService.stopSelf()
-        prefs.edit().putString(StatusPreference.STATUS.name, "").apply()
+        StatusPreference.STATUS.setValue(prefs,  "")
     }
 
     private fun tryReconnection() {
@@ -241,7 +242,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
             Log.d(TAG, "tryReconnection")
             reconnectionSettings.consumeCount()
             val str = reconnectionSettings.generateMessage()
-            prefs.edit().putString(StatusPreference.STATUS.name, str).apply()
+            StatusPreference.STATUS.setValue(prefs, str)
             vpnService.helper.updateNotification(str)
             val startTime = System.currentTimeMillis()
             val result = withTimeoutOrNull(10_000) {

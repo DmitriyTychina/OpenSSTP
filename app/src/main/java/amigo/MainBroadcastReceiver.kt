@@ -1,6 +1,7 @@
 package com.app.amigo
 
 import amigo.getSSID
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,13 +9,19 @@ import android.net.VpnService
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Log
+import androidx.preference.MultiSelectListPreference
+import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
-import java.text.SimpleDateFormat
-import java.util.*
+import androidx.preference.TwoStatePreference
+import com.app.amigo.fragment.BoolPreference
+import com.app.amigo.fragment.SetPreference
 
 
-class MainBroadcastReceiver : BroadcastReceiver() {
-    private var TAG = "@!@AppReceiver"
+class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? = null) :
+    BroadcastReceiver() {
+    private val Mode = mode
+    private val settingFragment = fragment
+    private var TAG = "@!@MainBroadcastReceiver"
     private var cnt = 0
 //    private final var wifiManager: WifiManager? = null
 //    var context: Context? = null
@@ -31,13 +38,15 @@ class MainBroadcastReceiver : BroadcastReceiver() {
 //    var event_battery: Boolean? = null
 //    var connection_list: String? = null
 
+    @SuppressLint("RestrictedApi")
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         Log.d(TAG, "onReceive.action=$action")
         val service = Intent(context.applicationContext, SstpVpnService::class.java)
-        val sharedPreferences =
+        val prefs =
             PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
-        val flagautostart = sharedPreferences.getBoolean("HOME_CONNECTOR", false)
+//        val flagautostart = sharedPreferences.getBoolean("HOME_CONNECTOR", false)
+        val flagautostart = BoolPreference.HOME_CONNECTOR.getValue(prefs)
 
 //        Toast.makeText(context.applicationContext, "action=$action", Toast.LENGTH_LONG).show()
 //        service.action = "broadcast"
@@ -85,24 +94,39 @@ class MainBroadcastReceiver : BroadcastReceiver() {
             cnt++
             Log.d(TAG, "SCAN_RESULTS cnt $cnt")
             val scanResults = wifiManager.scanResults
-            val summary = mutableListOf<String>()
-            summary.add(SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()).format(Date()))
+//            val summary = mutableListOf<String>()
+            val APlist = mutableListOf<String>()
+//            val APlistlevel = mutableListOf<String>()
+//            summary.add(SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()).format(Date()))
             scanResults?.forEach {
-                summary.add(it.SSID + ": " + it.level)
+//                summary.add(it.SSID + ": " + it.level)
+                APlist.add(it.SSID)
+//                APlistlevel.add(it.SSID + ": " + it.level)
             }
-            Log.d(TAG, "Scan OK $summary")
-//            val wifiState = wifiManager?.wifiState
-//            summary.forEach() {
-//                sharedPreferences.edit().putString(StatusPreference.MQTT_STATUS.name, it)
-//                    .apply()
-//            }
-//            sharedPreferences.edit().putString(
-//                StatusPreference.MQTT_STATUS.name,
-////                wifiState.toString()
-//                summary.reduce { acc, s ->
-//                    acc + "\n" + s
-//                }
-//            ).apply()
+            Log.d(TAG, "Scan OK $APlist")
+            if (Mode == 1) {
+                context.unregisterReceiver(this)
+                settingFragment?.findPreference<TwoStatePreference>(BoolPreference.SELECT_HOME_WIFI.name)!!
+                    .also {
+                        if (it.isChecked) {
+                            Log.d(TAG, "onPreferenceClickListener SELECT_HOME_WIFI = true")
+                            val params =
+                                SetPreference.HOME_WIFI_SUITES.getValue(prefs) + APlist
+                            settingFragment?.findPreference<MultiSelectListPreference>(SetPreference.HOME_WIFI_SUITES.name)!!
+                                .also {
+                                    it.isEnabled = true
+                                    it.entries = params.toTypedArray()
+                                    it.entryValues = params.toTypedArray()
+                                }
+                        } else {
+                            Log.d(TAG, "onPreferenceClickListener SELECT_HOME_WIFI = false")
+                            settingFragment?.findPreference<MultiSelectListPreference>(SetPreference.HOME_WIFI_SUITES.name)!!
+                                .also {
+                                    it.isEnabled = false
+                                }
+                        }
+                    }
+            }
         }
 //        if (action.equals("android.intent.action.SCREEN_ON")
 //                ||action.equals("android.intent.action.SCREEN_OFF")){

@@ -51,7 +51,9 @@ internal class NetworkObserver(val parent: ControlClient) {
 //    @SuppressLint("ServiceCast")
     private fun makeSummary(properties: LinkProperties): String {
         val summary = mutableListOf<String>()
-        summary.add(SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.getDefault()).format(Date()))
+        summary.add(SimpleDateFormat("HH:mm:ss dd.MM.yyyy", Locale.getDefault()).format(Date()))
+        summary.add("")
+
         summary.add("[Assigned IP Address]")
         properties.linkAddresses.forEach {
             summary.add(it.address.hostAddress)
