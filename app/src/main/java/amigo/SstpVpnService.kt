@@ -72,27 +72,27 @@ internal class SstpVpnService : VpnService() {
 //        helper.updateNotification("update")
 //                beForegrounded() // уведомление о работе vpn
 //                Log.d(TAG, "beForegrounded!!!!!")
-                        it.run()
                     }
                 }
+                controlClient!!.run()
                 START_STICKY
             } else {
                 START_NOT_STICKY
             }
-        } else {
+        } else if (VpnAction.ACTION_DISCONNECT.value == intent?.action ?: false) {
             if (state) {
                 Log.d(TAG, "fStopService")
                 state = false
-                if (VpnAction.ACTION_DISCONNECT.value == intent?.action ?: false) {
-                    Log.d(TAG, "ACTION_DISCONNECT")
-                    controlClient?.kill(Throwable("com.app.amigo.DISCONNECT"))
-                    controlClient = null
-                }
+                Log.d(TAG, "ACTION_DISCONNECT")
+                controlClient?.kill(Throwable("com.app.amigo.DISCONNECT"))
+                controlClient = null
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     stopForeground(true)
                 }
                 stopSelf()
             }
+            START_NOT_STICKY
+        } else {
             START_NOT_STICKY
         }
     }

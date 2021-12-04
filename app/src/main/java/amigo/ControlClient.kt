@@ -44,9 +44,9 @@ internal class ReconnectionSettings(prefs: SharedPreferences) {
     internal fun generateMessage(): String {
         val triedCount = initialCount - currentCount
         return if (initialCount > 0)
-            "Переподключение №: $triedCount/$initialCount"
+            "Reconnection: $triedCount/$initialCount"
         else
-            "Переподключение №: $currentCount"
+            "Reconnection: $currentCount"
     }
 }
 
@@ -242,8 +242,12 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
             Log.d(TAG, "tryReconnection")
             reconnectionSettings.consumeCount()
             val str = reconnectionSettings.generateMessage()
+            Log.d(TAG, "tryReconnection1 + $str")
+//            prefs.edit().putString(StatusPreference.STATUS.name, str).apply()
             StatusPreference.STATUS.setValue(prefs, str)
+            Log.d(TAG, "tryReconnection2")
             vpnService.helper.updateNotification(str)
+            Log.d(TAG, "tryReconnection3")
             val startTime = System.currentTimeMillis()
             val result = withTimeoutOrNull(10_000) {
                 while (true) {

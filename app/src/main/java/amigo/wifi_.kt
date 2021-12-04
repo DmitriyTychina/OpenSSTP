@@ -8,16 +8,16 @@ import android.util.Log
 
 val TAG = "@!@wifi_kt"
 
-fun WifiManager.deviceName(): String = connectionInfo.ssid.run {
-    if (this.contains("<unknown ssid>")) "UNKNOWN" else this
-}
+//fun WifiManager.deviceName(): String = connectionInfo.ssid.run {                  *
+//    if (this.contains("<unknown ssid>")) "UNKNOWN" else this                      *
+//}                                                                                 *
 
 @SuppressLint("MissingPermission")
 fun getSSID(context: Context): String {
     val wifiManager =
         context.getSystemService(Context.WIFI_SERVICE) as WifiManager
     val connectionInfo = wifiManager.connectionInfo
-    Log.d(TAG+":getSSID", "wifiManager.deviceName " + wifiManager.deviceName())
+//    Log.d(TAG+":getSSID", "wifiManager.deviceName " + wifiManager.deviceName())   *
     if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.ssid)) {
         Log.d(TAG+":getSSID", "connectionInfo.ssid: ${connectionInfo.ssid}")
         return connectionInfo.ssid

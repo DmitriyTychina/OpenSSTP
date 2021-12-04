@@ -25,7 +25,6 @@ internal class NetworkObserver(val parent: ControlClient) {
             it.build()
         }
 
-
         callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {

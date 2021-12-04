@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.Intent
 import android.content.SharedPreferences
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -78,13 +79,18 @@ class HomeFragment : PreferenceFragmentCompat() {
 ////                    }
                 }
             }
-        preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(sharedPreferenceListener)
+        preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(
+            sharedPreferenceListener
+        )
     }
 
     private fun startVPN(): Boolean {
         if (!checkPreferences()) {
             Log.d(TAG, "checkPreferences=false")
-            StatusPreference.STATUS.setValue(preferenceManager.sharedPreferences,  "Неверно заданы настройки")
+            StatusPreference.STATUS.setValue(
+                preferenceManager.sharedPreferences,
+                "Неверно заданы настройки"
+            )
             return false
         }
         val intent = VpnService.prepare(context)
@@ -141,7 +147,10 @@ class HomeFragment : PreferenceFragmentCompat() {
                 if (account != null) {
 //                    if (checkPreferences()){
 //                        //диалог подтверждающий замену рабочих настроек
-                    setPacketSettings(account,  PreferenceManager.getDefaultSharedPreferences(context)) // загружаем настройки для опреденного аккаунта гугл
+                    setPacketSettings(
+                        account,
+                        PreferenceManager.getDefaultSharedPreferences(context)
+                    ) // загружаем настройки для опреденного аккаунта гугл
 //                    }
                 }
 //                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
@@ -156,7 +165,21 @@ class HomeFragment : PreferenceFragmentCompat() {
     }
 
     private fun startVpnService(action: VpnAction) {
-        context?.startService(Intent(context, SstpVpnService::class.java).setAction(action.value))
+//        context?.startService(Intent(context, SstpVpnService::class.java).setAction(action.value))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context?.startForegroundService(
+                Intent(context, SstpVpnService::class.java).setAction(
+                    action.value
+                )
+            )
+        } else {
+            context?.startService(
+                Intent(
+                    context,
+                    SstpVpnService::class.java
+                ).setAction(action.value)
+            )
+        }
     }
 
     private fun makeToast(cause: String) {

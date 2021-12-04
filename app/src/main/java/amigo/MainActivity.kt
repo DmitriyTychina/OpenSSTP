@@ -3,7 +3,13 @@ package com.app.amigo
 import amigo.fragment.HomeFragment
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -17,7 +23,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 
 class MainActivity : AppCompatActivity() {
     private var TAG = "@!@MainActivity"
-//    lateinit var cm: ConnectivityManager
+    lateinit var cm: ConnectivityManager
 
     @SuppressLint("NewApi")
 
@@ -77,58 +83,58 @@ class MainActivity : AppCompatActivity() {
             )
             //do something if have the permissions
         }
-//        cm = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        cm = applicationContext.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
     }
 
-//    val networkRequest = NetworkRequest.Builder()
-//        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-//        .build()
-//    val networkCallback = object : ConnectivityManager.NetworkCallback() {
-//
-//        // Called when the framework connects and has declared a new network ready for use.
-//        override fun onAvailable(network: Network) {
-//            super.onAvailable(network)
-//            Log.d(TAG, "onAvailable: ${network}")
-//            //*******
-//            val connManager =
-//                applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-////                val networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
-//            val linkProperties = connManager.getLinkProperties(network)
-//            Log.d(TAG, "LinkProperties $linkProperties")
-//
-//            val wifiManager =
-//                applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-//            val connectionInfo = wifiManager.connectionInfo
-//            if (connectionInfo != null) {
-//                Log.d(TAG, "connectionInfo: $connectionInfo")
-//            }
-//            //*******
-//            val capabilities = cm.getNetworkCapabilities(network)
-//            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
-//                Log.d(TAG, "NetworkCapabilities: TRANSPORT_WIFI")
-//            }
-//            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true) {
-//                Log.d(TAG, "NetworkCapabilities: TRANSPORT_CELLULAR")
-//            }
-//            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
-//                Log.d(TAG, "NetworkCapabilities: TRANSPORT_VPN")
-//            }
-//        }
-//
-//        // Called when a network disconnects or otherwise no longer satisfies this request or callback
-//        override fun onLost(network: Network) {
-//            super.onLost(network)
-//            Log.d(TAG, "onLost: ${network}")
-//        }
-//    }
+    val networkRequest = NetworkRequest.Builder()
+        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        .build()
+    val networkCallback = object : ConnectivityManager.NetworkCallback() {
 
-//    override fun onStart() {
-//        super.onStart()
-//        cm.registerNetworkCallback(networkRequest, networkCallback)
-//    }
-//
-//    override fun onDestroy() {
-//        super.onDestroy()
-//        cm.unregisterNetworkCallback(networkCallback)
-//    }
+        // Called when the framework connects and has declared a new network ready for use.
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+            Log.d(TAG, "onAvailable: $network")
+            //*******
+            val connManager =
+                applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+//                val networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+            val linkProperties = connManager.getLinkProperties(network)
+            Log.d(TAG, "LinkProperties $linkProperties")
+
+            val wifiManager =
+                applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val connectionInfo = wifiManager.connectionInfo
+            if (connectionInfo != null) {
+                Log.d(TAG, "connectionInfo: $connectionInfo")
+            }
+            //*******
+            val capabilities = cm.getNetworkCapabilities(network)
+            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+                Log.d(TAG, "NetworkCapabilities: TRANSPORT_WIFI")
+            }
+            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true) {
+                Log.d(TAG, "NetworkCapabilities: TRANSPORT_CELLULAR")
+            }
+            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
+                Log.d(TAG, "NetworkCapabilities: TRANSPORT_VPN")
+            }
+        }
+
+        // Called when a network disconnects or otherwise no longer satisfies this request or callback
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            Log.d(TAG, "onLost: ${network}")
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        cm.registerNetworkCallback(networkRequest, networkCallback)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cm.unregisterNetworkCallback(networkCallback)
+    }
 }

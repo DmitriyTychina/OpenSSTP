@@ -154,9 +154,10 @@ internal enum class StatusPreference(
     }
 
     override fun setValue(prefs: SharedPreferences, value: String) {
-        fragment?.findPreference<Preference>(name)?.also {
-            it.provideSummary(value)
-        }
+//        fragment?.findPreference<Preference>(name)?.also {
+//            Log.d(TAG, "$fragment + $name + $value")
+//            it.provideSummary(value)
+//        }
 //        if (this == ACCOUNT) {
 //        prefs.edit().putString(StatusPreference.STATUS.name, it).apply()
         prefs.edit().also { editor ->

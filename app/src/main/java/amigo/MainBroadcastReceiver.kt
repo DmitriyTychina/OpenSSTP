@@ -1,6 +1,5 @@
 package com.app.amigo
 
-import amigo.getSSID
 import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -15,7 +14,6 @@ import androidx.preference.PreferenceManager
 import androidx.preference.TwoStatePreference
 import com.app.amigo.fragment.BoolPreference
 import com.app.amigo.fragment.SetPreference
-
 
 class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? = null) :
     BroadcastReceiver() {
@@ -66,8 +64,8 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
             }
         }
 
+// WiFi включен или выключен
         if (action == WifiManager.WIFI_STATE_CHANGED_ACTION) {
-
         }
 
         if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
@@ -75,7 +73,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
 //            val nwInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO)
 //            nwInfo.getState()
 //            val info = wifiManager.connectionInfo
-            Log.d(TAG, "findSSIDForWifiInfo " + getSSID(context.applicationContext))
+
 //            val summary = mutableListOf<String>()
 //                    summary.add(findSSIDForWifiInfo(wifiManager))
 //            sharedPreferences.edit().putString(
@@ -105,14 +103,14 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
             }
             Log.d(TAG, "Scan OK $APlist")
             if (Mode == 1) {
-                context.unregisterReceiver(this)
+//                context.unregisterReceiver(this)
                 settingFragment?.findPreference<TwoStatePreference>(BoolPreference.SELECT_HOME_WIFI.name)!!
                     .also {
                         if (it.isChecked) {
                             Log.d(TAG, "onPreferenceClickListener SELECT_HOME_WIFI = true")
                             val params =
                                 SetPreference.HOME_WIFI_SUITES.getValue(prefs) + APlist
-                            settingFragment?.findPreference<MultiSelectListPreference>(SetPreference.HOME_WIFI_SUITES.name)!!
+                            settingFragment.findPreference<MultiSelectListPreference>(SetPreference.HOME_WIFI_SUITES.name)!!
                                 .also {
                                     it.isEnabled = true
                                     it.entries = params.toTypedArray()
@@ -120,7 +118,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
                                 }
                         } else {
                             Log.d(TAG, "onPreferenceClickListener SELECT_HOME_WIFI = false")
-                            settingFragment?.findPreference<MultiSelectListPreference>(SetPreference.HOME_WIFI_SUITES.name)!!
+                            settingFragment.findPreference<MultiSelectListPreference>(SetPreference.HOME_WIFI_SUITES.name)!!
                                 .also {
                                     it.isEnabled = false
                                 }
