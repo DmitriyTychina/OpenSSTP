@@ -1,5 +1,6 @@
 package com.app.amigo.layer
 
+import android.util.Log
 import com.app.amigo.ControlClient
 import com.app.amigo.misc.*
 import com.app.amigo.negotiator.*
@@ -162,14 +163,21 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 
     val TAG = "@!@SstpClient"
     override fun proceed() {
-//        Log.d(TAG, "*****status.sstp: " + status.sstp)
+        Log.e(TAG, "*****status.sstp: " + status.sstp)
         when (status.sstp) {
             SstpStatus.CLIENT_CALL_DISCONNECTED -> {
+                Log.e(TAG, "*****status.sstp1: Подключаемся...")
+//                parent.sslTerminal.release()//**del?
                 status_sstp_old = status.sstp
+                Log.e(TAG, "*****status.sstp2: Подключаемся...")
                 parent.sslTerminal.initializeSocket()
+                Log.e(TAG, "*****status.sstp3: Подключаемся...")
                 sendCallConnectRequest()
+                Log.e(TAG, "*****status.sstp4: Подключаемся...")
                 status.sstp = SstpStatus.CLIENT_CONNECT_REQUEST_SENT
+                Log.e(TAG, "*****status.sstp5: Подключаемся...")
                 parent.vpnService.helper.updateNotification("Подключаемся...")
+                Log.e(TAG, "*****status.sstp6: Подключаемся...")
             }
 
             SstpStatus.CLIENT_CONNECT_REQUEST_SENT -> proceedRequestSent()

@@ -75,11 +75,11 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
     private var jobData: Job? = null
     private val isAllJobCompleted: Boolean
         get() {
-//            val cats = arrayListOf(jobIncoming, jobControl, jobEncapsulate, jobData)
+            val arr = arrayListOf(jobIncoming, jobControl, jobEncapsulate, jobData)
             var result = true
-//            for ((index, element) in cats.withIndex()) {
-//                Log.e(TAG, "$index + $element " + element?.isCompleted)
-//            }
+            for ((index, element) in arr.withIndex()) {
+                Log.e(TAG, "$index + $element " + element?.isCompleted)
+            }
             arrayOf(jobIncoming, jobControl, jobEncapsulate, jobData).forEach {
 //                Log.e(TAG, "isAllJobCompleted " + it)
                 if (it != null) {
@@ -121,21 +121,21 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
     internal fun kill(exception: Throwable?) {
         launch {
 
-// крашится при @!@*****exception: java.net.UnknownHostException: Unable to resolve host "tychina.keenetic.pro": No address associated with hostname *****isClosing: false
+// крашится при @!@*****exception: java.net.UnknownHostException: Unable to resolve host "***.keenetic.pro": No address associated with hostname *****isClosing: false
 
-            Log.d(TAG, "*****exception: " + exception + " *****isClosing: " + isClosing)
-            if (exception != null) {
-                Log.e(TAG, "*****exception.message: " + exception.message)
-                Log.e(TAG, "*****exception.localizedMessage: " + exception.localizedMessage)
-                Log.e(TAG, "*****exception.cause: " + exception.cause)
-            }
+            Log.e(TAG, "*****exception: " + exception + " *****isClosing: " + isClosing)
+//            if (exception != null) {
+//                Log.e(TAG, "*****exception.message: " + exception.message)
+//                Log.e(TAG, "*****exception.localizedMessage: " + exception.localizedMessage)
+//                Log.e(TAG, "*****exception.cause: " + exception.cause)
+//            }
             mutex.withLock {
 //                Log.d(TAG, "An unexpected event occurred " + exception.toString())
                 if (!isClosing) {
                     isClosing = true
                     controlQueue.add(0)
                     if (exception != null && exception !is SuicideException) {
-                        observer?.close()
+//                        observer?.close()
                         inform("An unexpected event occurred", exception)
                         Log.e(TAG, "!is SuicideException: " + exception)
                     }
@@ -143,13 +143,13 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                     if (exception != null)
                         when (exception.localizedMessage) {
                             "com.app.amigo.DISCONNECT", "No address associated with hostname"/*, "Kill this client as intended"*/ -> {
-                                StatusPreference.STATUS.setValue(prefs,  "")
+                                StatusPreference.STATUS.setValue(prefs, "")
 //                                observer?.close()
                             }
                         }
                     // release ConnectivityManager resource
 //                    Log.e(TAG, "observer " + observer)
-                    observer?.close() // смотри внутрь
+                    observer?.close() // смотри внутрь .close()
 //                    Log.e(TAG, "@!@***** 2 *****")
 
                     // no more packets needed to be retrieved
@@ -170,7 +170,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
                     withTimeout(10_000) {
                         while (isActive) {
                             if (jobControl?.isCompleted == false) {
-                                delay(100)
+                                delay(1)
                             } else break
                         }
                     }
@@ -234,29 +234,25 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
         vpnService.stopSelf()
 //        vpnService.stopForeground(true)
 //        vpnService.stopSelf()
-        StatusPreference.STATUS.setValue(prefs,  "")
+        StatusPreference.STATUS.setValue(prefs, "")
     }
 
     private fun tryReconnection() {
         launch {
-            Log.d(TAG, "tryReconnection")
             reconnectionSettings.consumeCount()
             val str = reconnectionSettings.generateMessage()
-            Log.d(TAG, "tryReconnection1 + $str")
-//            prefs.edit().putString(StatusPreference.STATUS.name, str).apply()
+            Log.d(TAG, "tryReconnection + $str")
             StatusPreference.STATUS.setValue(prefs, str)
-            Log.d(TAG, "tryReconnection2")
             vpnService.helper.updateNotification(str)
-            Log.d(TAG, "tryReconnection3")
             val startTime = System.currentTimeMillis()
             val result = withTimeoutOrNull(10_000) {
                 while (true) {
                     if (isAllJobCompleted) {
-                        //                        Log.e(TAG, "isAllJobCompleted == true")
+                                                Log.e(TAG, "isAllJobCompleted == true")
                         return@withTimeoutOrNull true
                     } else {
-                        //                        Log.e(TAG, "isAllJobCompleted == false")
-                        delay(1)
+                                                Log.e(TAG, "isAllJobCompleted == false")
+                        delay(100)
                     }
                 }
             }
@@ -264,8 +260,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
 //            Log.e(TAG, "tryReconnection: result == $result")
 //            Log.e(TAG, "measureTimeMillis: " + totalTime)
             val delay_ms = reconnectionSettings.intervalMillis - totalTime
-//            Log.e(TAG, "delay_ms: " + delay_ms)
-            if (delay_ms > 0) delay(delay_ms)
+            Log.e(TAG, "delay_ms: " + delay_ms)
             if (result == null && !reconnectionSettings.isRetryable) {
                 inform("The last session cannot be cleaned up", null)
 //                makeNotification(NOTIFICATION_ID, "Failed to reconnect2")
@@ -275,28 +270,9 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
 //                    it.cancel(NOTIFICATION_ID) // удалить notifi
 //                }
 
-    //*******
-//                val wifiManager = vpnService.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-//                val wifiName = wifiManager.deviceName()
-//                wifiManager.getConnectionInfo()
-
-//                val connManager =
-//                    vpnService.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-//                val networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
-//                if (networkInfo?.isConnected == true) {
-//                    val wifiManager =
-//                        vpnService.applicationContext.getApplicationContext().getSystemService(Context.WIFI_SERVICE) as WifiManager
-//                    val connectionInfo = wifiManager.connectionInfo
-//                    if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.ssid)) {
-//                        Log.e("ssid", connectionInfo.ssid)
-//                    }
-//                }
-//                else{
-//                    Log.e("ssid", "No Connection")
-//                }
-           //********
                 initialize()
-                run()
+                if (delay_ms > 0) delay(delay_ms)
+                if (!isClosing) run()
             }
         }
     }
