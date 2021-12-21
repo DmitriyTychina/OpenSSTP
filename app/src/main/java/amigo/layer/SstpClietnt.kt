@@ -163,9 +163,9 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 
     val TAG = "@!@SstpClient"
     override fun proceed() {
-        Log.e(TAG, "*****status.sstp: " + status.sstp)
         when (status.sstp) {
             SstpStatus.CLIENT_CALL_DISCONNECTED -> {
+                Log.e(TAG, "*****status.sstp: " + status.sstp)
                 Log.e(TAG, "*****status.sstp1: Подключаемся...")
 //                parent.sslTerminal.release()//**del?
                 status_sstp_old = status.sstp
@@ -180,14 +180,22 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
                 Log.e(TAG, "*****status.sstp6: Подключаемся...")
             }
 
-            SstpStatus.CLIENT_CONNECT_REQUEST_SENT -> proceedRequestSent()
+            SstpStatus.CLIENT_CONNECT_REQUEST_SENT -> {
+                proceedRequestSent()
+                Log.e(TAG, "*****status.sstp: " + status.sstp)
+            }
 
-            SstpStatus.CLIENT_CONNECT_ACK_RECEIVED -> proceedAckReceived()
+            SstpStatus.CLIENT_CONNECT_ACK_RECEIVED -> {
+                proceedAckReceived()
+                Log.e(TAG, "*****status.sstp: " + status.sstp)
+            }
 
             SstpStatus.CLIENT_CALL_CONNECTED -> {
                 if (status_sstp_old != status.sstp) {
                     parent.vpnService.helper.updateNotification("Подключено")
+                    parent.stateAndSettings.isVPNConnected = true
                     status_sstp_old = status.sstp
+                    Log.e(TAG, "*****status.sstp: " + status.sstp)
                 }
                 proceedConnected()
             }
@@ -197,9 +205,11 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 //        SstpStatus.CALL_DISCONNECT_IN_PROGRESS_1,
 //        SstpStatus.CALL_DISCONNECT_IN_PROGRESS_2,
             else -> {
+                parent.stateAndSettings.isVPNConnected = false
                 status_sstp_old = status.sstp
                 sendLastGreeting()
                 parent.vpnService.helper.updateNotification("Обрыв соединения")
+                Log.e(TAG, "*****status.sstp: " + status.sstp)
             }
         }
     }

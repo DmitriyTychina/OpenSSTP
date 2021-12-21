@@ -2,6 +2,8 @@ package amigo
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import android.net.wifi.WifiManager
 import android.text.TextUtils
 import android.util.Log
@@ -11,6 +13,21 @@ val TAG = "@!@wifi_kt"
 //fun WifiManager.deviceName(): String = connectionInfo.ssid.run {                  *
 //    if (this.contains("<unknown ssid>")) "UNKNOWN" else this                      *
 //}                                                                                 *
+
+//fun hasConnection(context: Context): String? {
+//    val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+//    var wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
+//    if (wifiInfo != null && wifiInfo.isConnected) {
+//        Log.e(TAG, "Network Connection is TYPE_WIFI")
+//        return "wifi"
+//    }
+//    wifiInfo = cm.getNetworkInfo(ConnectivityManager.TYPE_MOBILE)
+//    if (wifiInfo != null && wifiInfo.isConnected) {
+//        Log.e(TAG, "Network Connection is TYPE_MOBILE")
+//        return "mobile"
+//    }
+//    return "false"
+//}
 
 @SuppressLint("MissingPermission")
 fun getSSID(context: Context): String {

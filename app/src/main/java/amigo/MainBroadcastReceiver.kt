@@ -19,6 +19,8 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
     BroadcastReceiver() {
     private val Mode = mode
     private val settingFragment = fragment
+
+    //    private val controlClient: ControlClient? = null
     private var TAG = "@!@MainBroadcastReceiver"
     private var cnt = 0
 //    private final var wifiManager: WifiManager? = null
@@ -65,15 +67,18 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
         }
 
 // WiFi включен или выключен
-        if (action == WifiManager.WIFI_STATE_CHANGED_ACTION) {
+        if (action == WifiManager.WIFI_STATE_CHANGED_ACTION || action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
+            service.putExtra("action", BCAction.ACTION_WIFI_STATE_CHANGED.value)
+//            service.putExtra("data", BCAction.ACTION_WIFI_STATE_CHANGED.value)
+            context.startService(service)
         }
 
-        if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
+//        if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
 
 //            val nwInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO)
 //            nwInfo.getState()
 //            val info = wifiManager.connectionInfo
-
+//
 //            val summary = mutableListOf<String>()
 //                    summary.add(findSSIDForWifiInfo(wifiManager))
 //            sharedPreferences.edit().putString(
@@ -84,7 +89,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
 
 //            wifiManager =
 //                getApplicationContext().getSystemService(Context.WIFI_SERVICE) as WifiManager?
-        }
+//        }
 
         if (action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) {
             val wifiManager =

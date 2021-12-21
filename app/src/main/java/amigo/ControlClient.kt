@@ -1,13 +1,16 @@
 package com.app.amigo
 
+import android.content.Context
 import android.content.SharedPreferences
-import android.net.Uri
-import android.net.VpnService
+import android.net.*
+import android.net.wifi.WifiManager
 import android.os.Build
+import android.text.TextUtils
 import androidx.documentfile.provider.DocumentFile
 import androidx.preference.PreferenceManager
 import com.app.amigo.fragment.BoolPreference
 import com.app.amigo.fragment.IntPreference
+import com.app.amigo.fragment.SetPreference
 import com.app.amigo.fragment.StatusPreference
 import com.app.amigo.layer.*
 import com.app.amigo.misc.*
@@ -50,6 +53,28 @@ internal class ReconnectionSettings(prefs: SharedPreferences) {
     }
 }
 
+internal class StateAndSettings(prefs: SharedPreferences) {
+    internal val sp = prefs
+    internal var networkTransport = "UNDEFINED"
+        set(value) {
+            if (StatusPreference.CONNECTEDVIA.getValue(sp) != value)
+                StatusPreference.CONNECTEDVIA.setValue(sp, value)
+        }
+    internal var isVPNConnected: Boolean = false
+//        set(data) {
+//            stateChanged()
+//        }
+//    internal var isWIFIConnected: Boolean = false
+//        set(data) {
+//            stateChanged()
+//        }
+//
+//    internal fun stateChanged() {
+//        StatusPreference.CONNECTEDVIA.setValue(sp, NetworkTransport)
+//    }
+
+}
+
 internal class ControlClient(internal val vpnService: SstpVpnService) :
     CoroutineScope by CoroutineScope(Dispatchers.IO + SupervisorJob()) {
     private var TAG = "@!@ControlClient"
@@ -63,6 +88,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
     internal val controlQueue = LinkedBlockingQueue<Any>()
     internal var logStream: BufferedOutputStream? = null
     internal val reconnectionSettings = ReconnectionSettings(prefs)
+    internal val stateAndSettings = StateAndSettings(prefs)
 
     internal lateinit var sslTerminal: SslTerminal
     private lateinit var sstpClient: SstpClient
@@ -104,6 +130,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
     }
 
     init {
+        stateAndSettings.isVPNConnected = false
         initialize()
     }
 
@@ -130,6 +157,8 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
 //                Log.e(TAG, "*****exception.cause: " + exception.cause)
 //            }
             mutex.withLock {
+                if (stateAndSettings.isVPNConnected)
+                    stateAndSettings.isVPNConnected = false
 //                Log.d(TAG, "An unexpected event occurred " + exception.toString())
                 if (!isClosing) {
                     isClosing = true
@@ -235,6 +264,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
 //        vpnService.stopForeground(true)
 //        vpnService.stopSelf()
         StatusPreference.STATUS.setValue(prefs, "")
+        stateAndSettings.isVPNConnected = false
     }
 
     private fun tryReconnection() {
@@ -247,13 +277,15 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
             val startTime = System.currentTimeMillis()
             val result = withTimeoutOrNull(10_000) {
                 while (true) {
-                    if (isAllJobCompleted) {
-                                                Log.e(TAG, "isAllJobCompleted == true")
-                        return@withTimeoutOrNull true
-                    } else {
-                                                Log.e(TAG, "isAllJobCompleted == false")
-                        delay(100)
-                    }
+                    if (isNetworkConnected()) {
+                        if (isAllJobCompleted) {
+                            Log.e(TAG, "isAllJobCompleted == true")
+                            return@withTimeoutOrNull true
+                        } else {
+                            Log.e(TAG, "isAllJobCompleted == false")
+                            delay(100)
+                        }
+                    } else delay(1000)
                 }
             }
             val totalTime = System.currentTimeMillis() - startTime
@@ -269,6 +301,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
 //                NotificationManagerCompat.from(vpnService.applicationContext).also {
 //                    it.cancel(NOTIFICATION_ID) // удалить notifi
 //                }
+                Log.e(TAG, "isNetworkConnected: " + if (isNetworkConnected()) "true" else "false")
 
                 initialize()
                 if (delay_ms > 0) delay(delay_ms)
@@ -282,10 +315,11 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
         if (networkSetting.LOG_DO_SAVE_LOG && logStream == null) {
             prepareLog()
         }
-        inform("Establish VPN connection", null)
+//        inform("Establish VPN connection", null)
         prepareLayers()
         launchJobIncoming()
         launchJobControl()
+        Log.d(TAG, "isNetworkConnected: " + if (isNetworkConnected()) "true" else "false")
     }
 
     private fun launchJobIncoming() {
@@ -427,7 +461,7 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
         }
     }
 
-//    private fun makeNotification(id: Int, message: String) {
+    //    private fun makeNotification(id: Int, message: String) {
 //        val builder =
 //            NotificationCompat.Builder(vpnService.applicationContext, vpnService.CHANNEL_ID).also {
 //                it.setSmallIcon(R.drawable.ic_baseline_vpn_lock_24)
@@ -441,4 +475,50 @@ internal class ControlClient(internal val vpnService: SstpVpnService) :
 //        }
 //        inform(message, null)
 //    }
+    fun isNetworkConnected(): Boolean {
+        //1
+        val connectivityManager =
+            vpnService.applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        //2
+        val activeNetwork = connectivityManager.activeNetwork
+        //3
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+        //4
+        var networkTransport = ""
+        var ssid = ""
+        if (networkCapabilities != null) {
+            Log.d(TAG, "NetworkCapabilities1: " + networkCapabilities.toString())
+            if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
+                val wifiManager =
+                    vpnService.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+                val connectionInfo = wifiManager.connectionInfo
+                if (connectionInfo != null && !TextUtils.isEmpty(connectionInfo.ssid)) {
+                    ssid = connectionInfo.ssid.replace("\"", "")
+                    Log.d(TAG, "connectionInfo.ssid: ${ssid}")
+                }
+                Log.d(TAG, "SetPreference.HOME_WIFI_SUITES.getValue: ${SetPreference.HOME_WIFI_SUITES.getValue(prefs)}")
+                if (SetPreference.HOME_WIFI_SUITES.getValue(prefs).contains(ssid)) {
+                    networkTransport = CTransport.TRANSPORT_HOMEWIFI.value + ": " + ssid
+                } else {
+                    networkTransport = CTransport.TRANSPORT_WIFI.value + ": " + ssid
+                }
+            } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true) {
+                networkTransport =
+                    CTransport.TRANSPORT_CELLULAR.value
+//            } else if (networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
+//                networkTransport = CTransport.TRANSPORT_VPN.value
+            } else {
+                networkTransport = CTransport.TRANSPORT_NONE.value
+            }
+        } else {
+            networkTransport = CTransport.TRANSPORT_NONE.value
+        }
+        stateAndSettings.networkTransport = networkTransport
+        Log.d(TAG, "NetworkCapabilities2: " + networkTransport)
+
+        return networkCapabilities != null &&
+                networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+
 }

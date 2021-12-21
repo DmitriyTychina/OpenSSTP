@@ -146,6 +146,7 @@ internal enum class StatusPreference(
 ) :
     PreferenceWrapper<String> {
     ACCOUNT(""),
+    CONNECTEDVIA(""),
     STATUS(""),
     MQTT_STATUS("");
 

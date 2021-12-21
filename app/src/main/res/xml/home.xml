@@ -16,6 +16,10 @@
 
     <PreferenceCategory>
         <com.app.amigo.fragment.LongSummaryPreference
+            android:key="CONNECTEDVIA"
+            android:title="Connected via:" />
+
+        <com.app.amigo.fragment.LongSummaryPreference
             android:key="STATUS"
             android:title="Current Status" />
     </PreferenceCategory>

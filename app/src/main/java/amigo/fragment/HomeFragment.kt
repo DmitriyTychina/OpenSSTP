@@ -20,6 +20,7 @@ import com.google.android.gms.common.AccountPicker
 private val homePreferences = arrayOf<PreferenceWrapper<*>>(
     StatusPreference.ACCOUNT,
     BoolPreference.HOME_CONNECTOR,
+    StatusPreference.CONNECTEDVIA,
     StatusPreference.STATUS,
 )
 
@@ -72,11 +73,16 @@ class HomeFragment : PreferenceFragmentCompat() {
                             it.setValueFragment(it.getValue(prefs))
                         }
                     }
-////                    StatusPreference.ACCOUNT.name -> {
-////                        StatusPreference.ACCOUNT.also {
-////                            it.setValue(/*this,*/ it.getValue(prefs))
-////                        }
-////                    }
+                    StatusPreference.ACCOUNT.name -> {
+                        StatusPreference.ACCOUNT.also {
+                            it.setValueFragment(it.getValue(prefs))
+                        }
+                    }
+                    StatusPreference.CONNECTEDVIA.name -> {
+                        StatusPreference.CONNECTEDVIA.also {
+                            it.setValueFragment(it.getValue(prefs))
+                        }
+                    }
                 }
             }
         preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(
