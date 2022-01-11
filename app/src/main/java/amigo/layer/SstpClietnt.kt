@@ -2,6 +2,7 @@ package com.app.amigo.layer
 
 import android.util.Log
 import com.app.amigo.ControlClient
+import com.app.amigo.enumStateVPN
 import com.app.amigo.misc.*
 import com.app.amigo.negotiator.*
 import com.app.amigo.unit.MessageType
@@ -68,6 +69,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 
         if (status.ppp == PppStatus.NEGOTIATE_IPCP || status.ppp == PppStatus.NETWORK) {
             sendCallConnected()
+            parent.stateAndSettings.state = enumStateVPN.VPN_CONNECTED
             status.sstp = SstpStatus.CLIENT_CALL_CONNECTED
             echoTimer.reset()
             return
@@ -193,7 +195,6 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
             SstpStatus.CLIENT_CALL_CONNECTED -> {
                 if (status_sstp_old != status.sstp) {
                     parent.vpnService.helper.updateNotification("Подключено")
-                    parent.stateAndSettings.isVPNConnected = true
                     status_sstp_old = status.sstp
                     Log.e(TAG, "*****status.sstp: " + status.sstp)
                 }
@@ -205,7 +206,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 //        SstpStatus.CALL_DISCONNECT_IN_PROGRESS_1,
 //        SstpStatus.CALL_DISCONNECT_IN_PROGRESS_2,
             else -> {
-                parent.stateAndSettings.isVPNConnected = false
+                parent.stateAndSettings.state = enumStateVPN.VPN_DISCONNECTED
                 status_sstp_old = status.sstp
                 sendLastGreeting()
                 parent.vpnService.helper.updateNotification("Обрыв соединения")

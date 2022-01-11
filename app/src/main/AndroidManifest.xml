@@ -32,7 +32,7 @@
             </intent-filter>
         </activity>
         <service
-            android:name=".SstpVpnService"
+            android:name=".MainService"
             android:enabled="true"
             android:exported="true"
             android:permission="android.permission.BIND_VPN_SERVICE">

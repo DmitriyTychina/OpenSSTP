@@ -374,7 +374,7 @@ internal class PppClient(parent: ControlClient) : Client(parent) {
         }
 
         status.ppp = PppStatus.NETWORK
-        parent.reconnectionSettings.resetCount()
+//        parent.reconnectionSettings.resetCount() // -10.01.22
         parent.launchJobData()
         echoTimer.reset()
     }
@@ -383,7 +383,7 @@ internal class PppClient(parent: ControlClient) : Client(parent) {
 
     internal fun kill() {
         status.sstp = SstpStatus.CALL_DISCONNECT_IN_PROGRESS_1
-        Log.e(TAG, "***** kill CALL_DISCONNECT_IN_PROGRESS_1*****")
+        Log.e(TAG, "***** onCommand CALL_DISCONNECT_IN_PROGRESS_1*****")
         parent.inform("PPP layer turned down", null)
     }
 }

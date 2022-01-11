@@ -1,4 +1,4 @@
-package amigo
+package com.app.amigo
 
 import android.annotation.SuppressLint
 import android.content.Context

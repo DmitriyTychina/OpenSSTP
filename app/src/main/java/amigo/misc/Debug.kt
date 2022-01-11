@@ -2,6 +2,7 @@ package com.app.amigo.misc
 
 import com.app.amigo.ControlClient
 import com.app.amigo.unit.DataUnit
+import org.chromium.base.Log
 import java.io.BufferedOutputStream
 import java.text.SimpleDateFormat
 import java.util.*
@@ -37,6 +38,7 @@ internal fun ControlClient.inform(message: String, cause: Throwable?) {
         printing += trace
     }
     printing += "\n"
+    Log.e("@!@.inform :", printing)
 
     logStream?.write(printing.toByteArray())
 }

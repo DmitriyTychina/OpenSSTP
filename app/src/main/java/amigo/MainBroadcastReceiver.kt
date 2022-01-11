@@ -4,9 +4,12 @@ import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.VpnService
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.text.TextUtils
 import android.util.Log
 import androidx.preference.MultiSelectListPreference
 import androidx.preference.PreferenceFragmentCompat
@@ -42,7 +45,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         Log.d(TAG, "onReceive.action=$action")
-        val service = Intent(context.applicationContext, SstpVpnService::class.java)
+        val service = Intent(context.applicationContext, MainService::class.java)
         val prefs =
             PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
 //        val flagautostart = sharedPreferences.getBoolean("HOME_CONNECTOR", false)
@@ -54,26 +57,31 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
                     action == "android.intent.action.QUICKBOOT_POWERON" ||
                     action == "com.htc.intent.action.QUICKBOOT_POWERON")
         ) {
-            VpnService.prepare(context)
+            VpnService.prepare(context) // 23.12.2021-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.applicationContext.startForegroundService(
-                    service.setAction(VpnAction.ACTION_CONNECT.value)
+                    service.setAction(enumStateService.SERVICE_START.name)
                 )
             } else {
                 context.applicationContext.startService(
-                    service.setAction(VpnAction.ACTION_CONNECT.value)
+                    service.setAction(enumStateService.SERVICE_START.name)
                 )
             }
         }
 
-// WiFi включен или выключен
-        if (action == WifiManager.WIFI_STATE_CHANGED_ACTION || action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
-            service.putExtra("action", BCAction.ACTION_WIFI_STATE_CHANGED.value)
-//            service.putExtra("data", BCAction.ACTION_WIFI_STATE_CHANGED.value)
-            context.startService(service)
+        if (action == WifiManager.WIFI_STATE_CHANGED_ACTION) {
+//            Log.d(TAG, "WIFI_STATE_CHANGED_ACTION")
+
+//            VpnService.prepare(context)
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//                context.applicationContext.startForegroundService(service.setAction(enumStateService.SERVICE_START.name))
+//            } else {
+//                context.applicationContext.startService(service.setAction(enumStateService.SERVICE_START.name))
+//            }
         }
 
-//        if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
+        if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
+//            Log.d(TAG, "NETWORK_STATE_CHANGED_ACTION")
 
 //            val nwInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO)
 //            nwInfo.getState()
@@ -89,7 +97,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
 
 //            wifiManager =
 //                getApplicationContext().getSystemService(Context.WIFI_SERVICE) as WifiManager?
-//        }
+        }
 
         if (action == WifiManager.SCAN_RESULTS_AVAILABLE_ACTION) {
             val wifiManager =

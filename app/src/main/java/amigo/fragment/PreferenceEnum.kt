@@ -269,6 +269,12 @@ internal enum class BoolPreference(
         }
     }
 
+    fun setEnabled(value: Boolean) {
+        fragment?.findPreference<TwoStatePreference>(name)?.also {
+          /*  if (it.isEnabled != value) */it.isEnabled = value
+        }
+    }
+
     //    @SuppressLint("LongLogTag")
     override fun initPreference(fragment: PreferenceFragmentCompat, prefs: SharedPreferences) {
         fragment.findPreference<TwoStatePreference>(name)?.also {

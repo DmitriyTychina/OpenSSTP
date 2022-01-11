@@ -11,6 +11,7 @@ import java.util.*
 
 internal class NetworkObserver(val parent: ControlClient) {
     private val manager = parent.vpnService.getSystemService(ConnectivityManager::class.java)
+    private var TAG = "@!@NetworkObserver"
 
     private var callback: ConnectivityManager.NetworkCallback? = null
 
@@ -26,7 +27,13 @@ internal class NetworkObserver(val parent: ControlClient) {
         }
 
         callback = object : ConnectivityManager.NetworkCallback() {
+
             override fun onAvailable(network: Network) {
+                Log.e(TAG, "onAvailable: ${network}")
+                Log.d(TAG,
+                    "NetworkCapabilities onAvailable: " + manager.getNetworkCapabilities(network)
+                        .toString()
+                )
                 if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
                     manager.getLinkProperties(network)?.also { linkProperties ->
                         makeSummary(linkProperties).also {
@@ -34,6 +41,12 @@ internal class NetworkObserver(val parent: ControlClient) {
                         }
                     }
                 }
+            }
+
+            override fun onLost(network: Network) {
+                super.onLost(network)
+                Log.e(TAG, "onLost: ${network}")
+//            parent.checkNetworks()
             }
 
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
@@ -47,7 +60,7 @@ internal class NetworkObserver(val parent: ControlClient) {
         callback?.let { manager.registerNetworkCallback(request, it) }
     }
 
-//    @SuppressLint("ServiceCast")
+    //    @SuppressLint("ServiceCast")
     private fun makeSummary(properties: LinkProperties): String {
         val summary = mutableListOf<String>()
         summary.add(SimpleDateFormat("HH:mm:ss dd.MM.yyyy", Locale.getDefault()).format(Date()))
@@ -86,7 +99,8 @@ internal class NetworkObserver(val parent: ControlClient) {
 
     internal fun close() {
         Log.e("@!@observer", "callback " + callback)
-//        callback?.let { manager?.unregisterNetworkCallback(it) } // убрал - для автозапуска при загрузке Android
+        callback?.let { manager?.unregisterNetworkCallback(it) } // убрал - для автозапуска при загрузке Android
+        callback = null
         wipeStatus()
     }
 }

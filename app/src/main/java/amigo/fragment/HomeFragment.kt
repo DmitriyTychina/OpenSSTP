@@ -1,6 +1,5 @@
 package amigo.fragment
 
-import amigo.unit.setPacketSettings
 import android.accounts.AccountManager
 import android.app.Activity
 import android.content.Intent
@@ -48,12 +47,12 @@ class HomeFragment : PreferenceFragmentCompat() {
         attachAccountClickListener()
 //        val linearLayout = findViewById<PreferenceScreen>(R.id.SwitchPreferenceCompat)
         if (BoolPreference.HOME_CONNECTOR.getValue(preferenceManager.sharedPreferences)) {
-            Log.d(TAG, "startVPN")
             startVPN()
-        }
-//        else
+        } else {
+            StatusPreference.CONNECTEDVIA.setValue(preferenceManager.sharedPreferences, "")
 //            preferenceManager.sharedPreferences.edit().putString(StatusPreference.STATUS.name, "").apply()
-
+//            BoolPreference.HOME_CONNECTOR.setEnabled(true)
+        }
     }
 
     //    @SuppressLint("LongLogTag")
@@ -91,23 +90,33 @@ class HomeFragment : PreferenceFragmentCompat() {
     }
 
     private fun startVPN(): Boolean {
+        Log.d(TAG, "start fun startVPN")
         if (!checkPreferences()) {
             Log.d(TAG, "checkPreferences=false")
             StatusPreference.STATUS.setValue(
                 preferenceManager.sharedPreferences,
                 "Неверно заданы настройки"
             )
+//            BoolPreference.HOME_CONNECTOR.setEnabled(true)
             return false
         }
-        val intent = VpnService.prepare(context)
+        val intent = VpnService.prepare(context) // диалог запрос на подключение к VPN
         if (intent != null) {
-            Log.d(TAG, "VpnService уже запущен")
-            startActivityForResult(intent, 0)
+            Log.d(TAG, "VpnService dialog")
+            startActivityForResult(
+                intent,
+                enumStateService.DIALOG_VPN.ordinal
+            ) // диалог запрос на подключение к VPN вызывается первый раз
         } else {
             Log.d(TAG, "startVpnService")
 //            StatusPreference.STATUS.setValue(preferenceManager.sharedPreferences,  "")
-            onActivityResult(0, Activity.RESULT_OK, null)
+            onActivityResult(
+                enumStateService.SERVICE_START.ordinal,
+                Activity.RESULT_OK,
+                null
+            ) // диалог запрос на подключение к VPN уже вызывался: запускаем сервис
         }
+//        BoolPreference.HOME_CONNECTOR.setEnabled(true)**
         return true
     }
 
@@ -116,10 +125,11 @@ class HomeFragment : PreferenceFragmentCompat() {
         Log.d(TAG, "attachConnectorChangeListener")
         findPreference<TwoStatePreference>(BoolPreference.HOME_CONNECTOR.name)!!.also {
             it.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newState ->
+//                it.isEnabled = false
                 if (newState == true) {
                     return@OnPreferenceChangeListener startVPN()
                 } else {
-                    startVpnService(VpnAction.ACTION_DISCONNECT)
+                    startMainService(enumStateService.SERVICE_STOP)
                 }
                 true
             }
@@ -130,23 +140,24 @@ class HomeFragment : PreferenceFragmentCompat() {
     private fun attachAccountClickListener() {
         Log.d(TAG, "attachAccountListener")
         findPreference<Preference>(StatusPreference.ACCOUNT.name)!!.also {
-//            it.shouldDisableView = false
-//            it.isEnabled = false
             it.onPreferenceClickListener = Preference.OnPreferenceClickListener {
                 val aco = AccountPicker.AccountChooserOptions.Builder()
                     .setAlwaysShowAccountPicker(true)
                     .setAllowableAccountsTypes(listOf("com.google"))
                     .build()
                 val intent = AccountPicker.newChooseAccountIntent(aco) as Intent
-                startActivityForResult(intent, 1111);
+                startActivityForResult(intent, enumStateService.DIALOG_ACCOUNT.ordinal);
                 true
             }
         }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-//        Log.d(TAG, "requestCode = $requestCode")
-        if (requestCode == 1111) {
+        Log.d(
+            TAG,
+            "onActivityResult requestCode = $requestCode, resultCode = $resultCode, Intent = $data"
+        )
+        if (requestCode == enumStateService.DIALOG_ACCOUNT.ordinal) {
             // Receiving a result from the AccountPicker
             if (resultCode == Activity.RESULT_OK) {
                 val account = data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
@@ -162,28 +173,31 @@ class HomeFragment : PreferenceFragmentCompat() {
 //                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_TYPE));
 //                System.out.println(data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME));
             } else if (resultCode == Activity.RESULT_CANCELED) {
-                Log.d(TAG, "AccountPicker   Activity.RESULT_CANCELED")
+                Log.d(TAG, "AccountPicker Activity.RESULT_CANCELED")
 //                    Toast.makeText(this, R.string.pick_account, Toast.LENGTH_LONG).show();
             }
-        } else if (requestCode == 0 && resultCode == Activity.RESULT_OK) {
-            startVpnService(VpnAction.ACTION_CONNECT)
-        }
+        } else if (requestCode == enumStateService.SERVICE_START.ordinal ||
+            (requestCode == enumStateService.DIALOG_VPN.ordinal && resultCode == Activity.RESULT_OK) // Ответ от диалога запрос на подключение к VPN: ok
+        ) {
+            startMainService(enumStateService.SERVICE_START)
+//            BoolPreference.HOME_CONNECTOR.setEnabled(true)
+        } else if (requestCode == enumStateService.DIALOG_VPN.ordinal && resultCode == Activity.RESULT_CANCELED) { // Ответ от диалога запрос на подключение к VPN: cancel
+            BoolPreference.HOME_CONNECTOR.setValueFragment(false)
+//            BoolPreference.HOME_CONNECTOR.setEnabled(true)
+        } else                 Log.d(TAG, "???????????????")
+
     }
 
-    private fun startVpnService(action: VpnAction) {
-//        context?.startService(Intent(context, SstpVpnService::class.java).setAction(action.value))
+    private fun startMainService(action: enumStateService) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context?.startForegroundService(
-                Intent(context, SstpVpnService::class.java).setAction(
-                    action.value
-                )
+                Intent(context, MainService::class.java)
+                    .setAction(action.name)
             )
         } else {
             context?.startService(
-                Intent(
-                    context,
-                    SstpVpnService::class.java
-                ).setAction(action.value)
+                Intent(context, MainService::class.java)
+                    .setAction(action.name)
             )
         }
     }
