@@ -144,7 +144,6 @@ internal class PppClient(parent: ControlClient) : Client(parent) {
                 else -> readAsDiscarded()
             }
         }
-
         incomingBuffer.forget()
     }
 
@@ -363,7 +362,7 @@ internal class PppClient(parent: ControlClient) : Client(parent) {
 
         parent.attachNetworkObserver()
 
-        parent.ipTerminal.also {
+        parent.ipTerminal?.also {
             try {
                 it.initializeTun()
             } catch (e: Exception) {
@@ -383,7 +382,6 @@ internal class PppClient(parent: ControlClient) : Client(parent) {
 
     internal fun kill() {
         status.sstp = SstpStatus.CALL_DISCONNECT_IN_PROGRESS_1
-        Log.e(TAG, "***** onCommand CALL_DISCONNECT_IN_PROGRESS_1*****")
         parent.inform("PPP layer turned down", null)
     }
 }
