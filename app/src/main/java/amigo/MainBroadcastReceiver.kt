@@ -4,12 +4,9 @@ import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.VpnService
 import android.net.wifi.WifiManager
 import android.os.Build
-import android.text.TextUtils
 import android.util.Log
 import androidx.preference.MultiSelectListPreference
 import androidx.preference.PreferenceFragmentCompat
@@ -60,11 +57,11 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
             VpnService.prepare(context) // 23.12.2021-
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.applicationContext.startForegroundService(
-                    service.setAction(enumStateService.SERVICE_START.name)
+                    service.setAction(EnumStateService.SERVICE_START.name)
                 )
             } else {
                 context.applicationContext.startService(
-                    service.setAction(enumStateService.SERVICE_START.name)
+                    service.setAction(EnumStateService.SERVICE_START.name)
                 )
             }
         }

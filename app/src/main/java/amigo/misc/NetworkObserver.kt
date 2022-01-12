@@ -1,7 +1,6 @@
 package com.app.amigo.misc
 
 import android.net.*
-import android.os.Build
 import androidx.preference.PreferenceManager
 import com.app.amigo.ControlClient
 import com.app.amigo.fragment.StatusPreference
@@ -19,7 +18,7 @@ internal class NetworkObserver(val parent: ControlClient) {
         PreferenceManager.getDefaultSharedPreferences(parent.vpnService.applicationContext)
 
     init {
-        wipeStatus()
+//        wipeStatus()
         val request = NetworkRequest.Builder().let {
             it.addTransportType(NetworkCapabilities.TRANSPORT_VPN)
             it.removeCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
@@ -29,30 +28,40 @@ internal class NetworkObserver(val parent: ControlClient) {
         callback = object : ConnectivityManager.NetworkCallback() {
 
             override fun onAvailable(network: Network) {
-                Log.e(TAG, "onAvailable: ${network}")
-                Log.d(TAG,
+                super.onAvailable(network)
+                Log.e(TAG, "onAvailable VPN: ${network}")
+                Log.d(
+                    TAG,
                     "NetworkCapabilities onAvailable: " + manager.getNetworkCapabilities(network)
                         .toString()
                 )
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-                    manager.getLinkProperties(network)?.also { linkProperties ->
-                        makeSummary(linkProperties).also {
-                            prefs.edit().putString(StatusPreference.STATUS.name, it).apply()
-                        }
-                    }
-                }
+                parent.checkNetworks()
+//                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+//                    manager.getLinkProperties(network)?.also { linkProperties ->
+//                        makeSummary(linkProperties).also {
+//                            prefs.edit().putString(StatusPreference.STATUS.name, it).apply()
+//                        }
+//                    }
+//                }
             }
 
             override fun onLost(network: Network) {
                 super.onLost(network)
-                Log.e(TAG, "onLost: ${network}")
-//            parent.checkNetworks()
+                Log.e(TAG, "onLost VPN: ${network}")
+                parent.checkNetworks()
             }
 
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
-                makeSummary(linkProperties).also {
-                    prefs.edit().putString(StatusPreference.STATUS.name, it).apply()
-                }
+                super.onLinkPropertiesChanged(network, linkProperties)
+                parent.refreshStatus()
+                Log.e(
+                    TAG,
+                    "onLinkPropertiesChanged VPN: ${network} linkProperties: $linkProperties"
+                )
+//                parent.refreshStatus()0
+                //                makeSummary(linkProperties).also {
+//                    prefs.edit().putString(StatusPreference.STATUS.name, it).apply()
+//                }
             }
         }
 
@@ -98,9 +107,9 @@ internal class NetworkObserver(val parent: ControlClient) {
     }
 
     internal fun close() {
-        Log.e("@!@observer", "callback " + callback)
-        callback?.let { manager?.unregisterNetworkCallback(it) } // убрал - для автозапуска при загрузке Android
+        Log.e("@!@observer", "unregisterNetworkCallback " + callback)
+        callback?.let { manager?.unregisterNetworkCallback(it) } // проверить автозапуск при загрузке Android
         callback = null
-        wipeStatus()
+//        wipeStatus()
     }
 }

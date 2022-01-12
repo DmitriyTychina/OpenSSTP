@@ -10,7 +10,7 @@ import android.widget.Toast
 import androidx.preference.PreferenceManager
 import com.app.amigo.fragment.BoolPreference
 
-internal enum class enumStateService(val value: String) {
+internal enum class EnumStateService(val value: String) {
     ENUM_NULL("com.app.amigo.NULL"),
     DIALOG_ACCOUNT("com.app.amigo.DIALOG_ACCOUNT"),
     DIALOG_VPN("com.app.amigo.DIALOG_VPN"),
@@ -18,32 +18,18 @@ internal enum class enumStateService(val value: String) {
 
     TEST("com.app.amigo.TEST"),
 
-    //    TYPE("com.app.amigo."),
-    //    TYPE("com.app.amigo."),
-    //    TYPE("com.app.amigo."),
-    //    TYPE("com.app.amigo."),
-    //    TYPE("com.app.amigo."),
-    //    TYPE("com.app.amigo."),
-    //    TYPE("com.app.amigo."),
     SERVICE_STOP("com.app.amigo.SERVICE_STOP"),
 }
 
-internal enum class VpnAction(val value: String) {
+internal enum class EnumAction(val value: String) {
     ACTION_CONNECT("com.app.amigo.CONNECT"),
     ACTION_DISCONNECT("com.app.amigo.DISCONNECT"),
-//    ACTION_WAIT("com.app.amigo.WAIT"),
-//    ACTION_WIFI_STATE_CHANGED("com.app.amigo.WIFI_STATE_CHANGED"),
 }
 
-//internal enum class BCAction(val value: String) {
-//    ACTION_WIFI_STATE_CHANGED("com.app.amigo.WIFI_STATE_CHANGED"),
-//}
-
-internal enum class CTransport(val value: String) {
+internal enum class EnumTransport(val value: String) {
     TRANSPORT_WIFI("WIFI"),
     TRANSPORT_HOMEWIFI("HOME WIFI"),
     TRANSPORT_CELLULAR("CELLULAR"),
-    TRANSPORT_VPN("VPN"),
     TRANSPORT_NONE("NONE"),
 }
 
@@ -56,7 +42,7 @@ internal class MainService : VpnService() {
     //    private var builder: NotificationCompat.Builder? = null
 //    internal val CHANNEL_ID = "HomeClient"
     var controlClient: ControlClient? = null
-    internal var curStateService = enumStateService.ENUM_NULL
+    internal var stateService = EnumStateService.ENUM_NULL
     internal val helper by lazy { NotificationHelper(this) }
 
 //    lateinit var cm: ConnectivityManager
@@ -87,16 +73,24 @@ internal class MainService : VpnService() {
                     )
                         .toString()
                 )
-                controlClient?.onCommand(Throwable(VpnAction.ACTION_CONNECT.value))
+                controlClient?.checkNetworks()
+                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost WiFi: ${network}")
-                controlClient?.onCommand(Throwable(VpnAction.ACTION_CONNECT.value))
+                controlClient?.checkNetworks()
+                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
                 super.onLinkPropertiesChanged(network, linkProperties)
                 Log.e(TAG, "onLinkPropertiesChanged WiFi: ${network} ---- ${linkProperties}")
+                if(controlClient != null){
+                if(controlClient!!.stateAndSettings.wifi_dns != linkProperties.dnsServers.toString()) {
+                    controlClient!!.stateAndSettings.wifi_dns = linkProperties.dnsServers.toString()
+                    controlClient!!.refreshStatus()
+                }
+                }
             }
         }
 
@@ -111,12 +105,14 @@ internal class MainService : VpnService() {
                     )
                         .toString()
                 )
-                controlClient?.onCommand(Throwable(VpnAction.ACTION_CONNECT.value))
+                controlClient?.checkNetworks()
+                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost CELLULAR: ${network}")
-                controlClient?.onCommand(Throwable(VpnAction.ACTION_CONNECT.value))
+                controlClient?.checkNetworks()
+                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
                 super.onLinkPropertiesChanged(network, linkProperties)
@@ -218,18 +214,18 @@ internal class MainService : VpnService() {
         val valHOME_CONNECTOR = BoolPreference.HOME_CONNECTOR.getValue(
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
         )
-        var newState: enumStateService
+        var newState: EnumStateService
 //        val old_state = state
 //        Log.d(TAG, "intent = " + intent)
 //        Log.d(TAG, "intent.action = " + intent?.action)
         if (intent != null && intent.action != null) intent.action.let {
             Log.d(TAG, "intent.action = " + it)
-            newState = enumStateService.valueOf(it!!)
+            newState = EnumStateService.valueOf(it!!)
             //                state = it
             Log.d(TAG, "newState = " + newState)
         } else {
             Log.e(TAG, "intent.action = null")
-            newState = enumStateService.ENUM_NULL
+            newState = EnumStateService.ENUM_NULL
         }
 
 //        if (!valHOME_CONNECTOR) {
@@ -241,7 +237,7 @@ internal class MainService : VpnService() {
 ////            }
 //        }
 
-        if (newState != enumStateService.ENUM_NULL) {
+        if (newState != EnumStateService.ENUM_NULL) {
 //            queue.add(newState)
             Log.d(TAG, "valHOME_CONNECTOR = " + valHOME_CONNECTOR)
         }
@@ -251,13 +247,13 @@ internal class MainService : VpnService() {
 //            ), queue.size.toString()
 //        )
 
-        curStateService = newState
+        stateService = newState
 
-        if (curStateService == enumStateService.SERVICE_STOP) {
+        if (stateService == EnumStateService.SERVICE_STOP) {
 //                            state = false
 //                            Log.d(TAG, "fStopService")
 //                            Log.d(TAG, "ACTION_DISCONNECT")
-            controlClient?.onCommand(Throwable(VpnAction.ACTION_DISCONNECT.value))
+            controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
 //                controlClient = null // 21.12.2021+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 stopForeground(true)
@@ -265,14 +261,14 @@ internal class MainService : VpnService() {
             stopSelf()
             return START_NOT_STICKY
         } else if (valHOME_CONNECTOR) { // запущено
-            if (curStateService == enumStateService.SERVICE_START) {
+            if (stateService == EnumStateService.SERVICE_START) {
 //                controlClient?.run()
-                controlClient?.onCommand(Throwable(VpnAction.ACTION_CONNECT.value))
+                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
 //                Log.d(TAG, "controlClient!!.run()")
 //            }
 //                            return START_STICKY
 
-            } else if (curStateService == enumStateService.TEST) {
+            } else if (stateService == EnumStateService.TEST) {
                 Log.d(TAG, "!!!!!!!!!!!!!! TEST !!!!!!!!!!!!!!!!!!!!")
             } else {
                 Log.d(TAG, "else:")

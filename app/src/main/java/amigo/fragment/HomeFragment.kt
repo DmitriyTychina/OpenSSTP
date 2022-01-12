@@ -105,13 +105,13 @@ class HomeFragment : PreferenceFragmentCompat() {
             Log.d(TAG, "VpnService dialog")
             startActivityForResult(
                 intent,
-                enumStateService.DIALOG_VPN.ordinal
+                EnumStateService.DIALOG_VPN.ordinal
             ) // диалог запрос на подключение к VPN вызывается первый раз
         } else {
             Log.d(TAG, "startVpnService")
 //            StatusPreference.STATUS.setValue(preferenceManager.sharedPreferences,  "")
             onActivityResult(
-                enumStateService.SERVICE_START.ordinal,
+                EnumStateService.SERVICE_START.ordinal,
                 Activity.RESULT_OK,
                 null
             ) // диалог запрос на подключение к VPN уже вызывался: запускаем сервис
@@ -129,7 +129,7 @@ class HomeFragment : PreferenceFragmentCompat() {
                 if (newState == true) {
                     return@OnPreferenceChangeListener startVPN()
                 } else {
-                    startMainService(enumStateService.SERVICE_STOP)
+                    startMainService(EnumStateService.SERVICE_STOP)
                 }
                 true
             }
@@ -146,7 +146,7 @@ class HomeFragment : PreferenceFragmentCompat() {
                     .setAllowableAccountsTypes(listOf("com.google"))
                     .build()
                 val intent = AccountPicker.newChooseAccountIntent(aco) as Intent
-                startActivityForResult(intent, enumStateService.DIALOG_ACCOUNT.ordinal);
+                startActivityForResult(intent, EnumStateService.DIALOG_ACCOUNT.ordinal);
                 true
             }
         }
@@ -157,7 +157,7 @@ class HomeFragment : PreferenceFragmentCompat() {
             TAG,
             "onActivityResult requestCode = $requestCode, resultCode = $resultCode, Intent = $data"
         )
-        if (requestCode == enumStateService.DIALOG_ACCOUNT.ordinal) {
+        if (requestCode == EnumStateService.DIALOG_ACCOUNT.ordinal) {
             // Receiving a result from the AccountPicker
             if (resultCode == Activity.RESULT_OK) {
                 val account = data?.getStringExtra(AccountManager.KEY_ACCOUNT_NAME)
@@ -176,19 +176,19 @@ class HomeFragment : PreferenceFragmentCompat() {
                 Log.d(TAG, "AccountPicker Activity.RESULT_CANCELED")
 //                    Toast.makeText(this, R.string.pick_account, Toast.LENGTH_LONG).show();
             }
-        } else if (requestCode == enumStateService.SERVICE_START.ordinal ||
-            (requestCode == enumStateService.DIALOG_VPN.ordinal && resultCode == Activity.RESULT_OK) // Ответ от диалога запрос на подключение к VPN: ok
+        } else if (requestCode == EnumStateService.SERVICE_START.ordinal ||
+            (requestCode == EnumStateService.DIALOG_VPN.ordinal && resultCode == Activity.RESULT_OK) // Ответ от диалога запрос на подключение к VPN: ok
         ) {
-            startMainService(enumStateService.SERVICE_START)
+            startMainService(EnumStateService.SERVICE_START)
 //            BoolPreference.HOME_CONNECTOR.setEnabled(true)
-        } else if (requestCode == enumStateService.DIALOG_VPN.ordinal && resultCode == Activity.RESULT_CANCELED) { // Ответ от диалога запрос на подключение к VPN: cancel
+        } else if (requestCode == EnumStateService.DIALOG_VPN.ordinal && resultCode == Activity.RESULT_CANCELED) { // Ответ от диалога запрос на подключение к VPN: cancel
             BoolPreference.HOME_CONNECTOR.setValueFragment(false)
 //            BoolPreference.HOME_CONNECTOR.setEnabled(true)
         } else                 Log.d(TAG, "???????????????")
 
     }
 
-    private fun startMainService(action: enumStateService) {
+    private fun startMainService(action: EnumStateService) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context?.startForegroundService(
                 Intent(context, MainService::class.java)

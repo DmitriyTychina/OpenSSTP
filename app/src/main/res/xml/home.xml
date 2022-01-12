@@ -14,10 +14,10 @@
         android:key="HOME_CONNECTOR"
         android:title="Start Service" />
 
-    <PreferenceCategory>
-        <com.app.amigo.fragment.LongSummaryPreference
-            android:key="CONNECTEDVIA"
-            android:title="Connected via:" />
+    <PreferenceCategory android:layout_width="wrap_content">
+        <!--        <com.app.amigo.fragment.LongSummaryPreference-->
+        <!--            android:key="CONNECTEDVIA"-->
+        <!--            android:title="Connected via:" />-->
 
         <com.app.amigo.fragment.LongSummaryPreference
             android:key="STATUS"

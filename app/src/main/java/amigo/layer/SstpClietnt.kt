@@ -69,7 +69,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 
         if (status.ppp == PppStatus.NEGOTIATE_IPCP || status.ppp == PppStatus.NETWORK) {
             sendCallConnected()
-            parent.stateAndSettings.state = enumStateVPN.VPN_CONNECTED
+            parent.stateAndSettings.vpn_state = enumStateVPN.VPN_CONNECTED
             status.sstp = SstpStatus.CLIENT_CALL_CONNECTED
             echoTimer.reset()
             return
@@ -167,7 +167,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
     override fun proceed() {
         when (status.sstp) {
             SstpStatus.CLIENT_CALL_DISCONNECTED -> {
-                Log.e(TAG, "*****status.sstp: " + status.sstp)
+                Log.e(TAG, "*****status.sstp0: " + status.sstp)
                 Log.e(TAG, "*****status.sstp1: Подключаемся...")
 //                parent.sslTerminal.release()//**del?
                 status_sstp_old = status.sstp
@@ -184,19 +184,19 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 
             SstpStatus.CLIENT_CONNECT_REQUEST_SENT -> {
                 proceedRequestSent()
-                Log.e(TAG, "*****status.sstp: " + status.sstp)
+                Log.e(TAG, "*****status.sstp7: " + status.sstp)
             }
 
             SstpStatus.CLIENT_CONNECT_ACK_RECEIVED -> {
                 proceedAckReceived()
-                Log.e(TAG, "*****status.sstp: " + status.sstp)
+                Log.e(TAG, "*****status.sstp8: " + status.sstp)
             }
 
             SstpStatus.CLIENT_CALL_CONNECTED -> {
                 if (status_sstp_old != status.sstp) {
                     parent.vpnService.helper.updateNotification("Подключено")
                     status_sstp_old = status.sstp
-                    Log.e(TAG, "*****status.sstp: " + status.sstp)
+                    Log.e(TAG, "*****status.sstp9: " + status.sstp)
                 }
                 proceedConnected()
             }
@@ -206,11 +206,12 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 //        SstpStatus.CALL_DISCONNECT_IN_PROGRESS_1,
 //        SstpStatus.CALL_DISCONNECT_IN_PROGRESS_2,
             else -> {
-                parent.stateAndSettings.state = enumStateVPN.VPN_DISCONNECTED
                 status_sstp_old = status.sstp
                 sendLastGreeting()
                 parent.vpnService.helper.updateNotification("Обрыв соединения")
-                Log.e(TAG, "*****status.sstp: " + status.sstp)
+                parent.stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
+                parent.launchJobStateMachine()
+                Log.e(TAG, "*****status.sstp10: " + status.sstp)
             }
         }
     }
