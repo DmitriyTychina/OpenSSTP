@@ -204,22 +204,25 @@ internal class ControlClient(internal val vpnService: MainService) :
 //            )
 //        }
         var stopStateMachine = false
+
+
         if (mutex.isLocked) {
             suspend {
                 while (mutex.isLocked) {
                     stopStateMachine = true
-                    delay(1000)
+                    delay(100)
                     Log.e(
                         TAG,
                         "while (mutex.isLocked)"
+
                     )
                 }
             }
-//        } else {
-//            stateAndSettings.vpn_state = enumStateVPN.VPN_CONNECTING
         }
-        stopStateMachine = false
 
+        jobStateMachine?.cancel()
+
+        stopStateMachine = false
         jobStateMachine = launch(handler, CoroutineStart.LAZY) {
             mutex.withLock {
                 if (jobStateMachine != null) {
@@ -235,7 +238,7 @@ internal class ControlClient(internal val vpnService: MainService) :
                 checkNetworks()
                 Log.e(
                     TAG,
-                    "checkNetworks() befire while vpnService.stateService: {${vpnService.stateService}} " +
+                    "checkNetworks() before while vpnService.stateService: {${vpnService.stateService}} " +
                             "stateAndSettings.state: {${stateAndSettings.vpn_state}} " +
                             "stateAndSettings.networkTransport: {${stateAndSettings.networkTransport}}"
                 )
