@@ -17,6 +17,7 @@ import com.app.amigo.unit.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.chromium.base.Log
 import java.io.BufferedOutputStream
 import java.nio.ByteBuffer
@@ -147,7 +148,7 @@ internal class ControlClient(internal val vpnService: MainService) :
         Log.d(TAG, "INFO jobIncoming: ${jobIncoming}")
         Log.d(TAG, "INFO jobControl: ${jobControl}")
 //        }
-        launchJobStateMachine(exception)
+        run(exception)
     }
 
     init {
@@ -171,7 +172,7 @@ internal class ControlClient(internal val vpnService: MainService) :
     // 1 если stateService=Start и (VPN_DISCONNECTED или VPN_DISCONNECTING) и (TRANSPORT_WIFI или TRANSPORT_CELLULAR) --- коннект-впн
     // 2 если stateService=Start и (VPN_CONNECTED или VPN_CONNECTING) и (TRANSPORT_HOMEWIFI или TRANSPORT_NONE) --- дисконнект-впн
     // 3 если stateService=Stop и (VPN_CONNECTED или VPN_CONNECTING) --- дисконнект-впн
-    internal fun launchJobStateMachine(exception: Throwable = Throwable("myDefaultException")) {
+    internal fun run(exception: Throwable = Throwable("myDefaultException")) {
         Log.e(
             TAG,
             "***** start fun launchJobStateMaсhine() exception.localizedMessage ${exception.localizedMessage}"
@@ -203,207 +204,204 @@ internal class ControlClient(internal val vpnService: MainService) :
 
         Log.d(TAG, "queue.size1 = ${queue.size}")
         queue.add(null)
-        if ((jobStateMachine == null) || ((jobStateMachine?.isCompleted == true) || (jobStateMachine?.isCancelled == true))){
+        if ((jobStateMachine == null) || (!mutex.isLocked)/* || ((jobStateMachine?.isCompleted == true) || (jobStateMachine?.isCancelled == true))*/) {
 //            reconnectionSettings.resetCount()
             jobStateMachine = launch() {
-//                mutex.withLock {
-                if (jobStateMachine != null) {
-                    Log.d(
-                        TAG,
-                        "*1* launch job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
-                                + " .isCompleted = ${jobStateMachine!!.isCompleted}"
-                                + " .isCancelled = ${jobStateMachine!!.isCancelled}"
-                                + " mutex = ${mutex.isLocked}"
-                    )
-                }
-                checkNetworks()
-                Log.e(
-                    TAG,
-                    "checkNetworks() before while vpnService.stateService: {${vpnService.stateService}} " +
-                            "stateAndSettings.state: {${stateAndSettings.vpn_state}} " +
-                            "stateAndSettings.networkTransport: {${stateAndSettings.networkTransport}}"
-                )
+                mutex.withLock {
+                    checkNetworks()
 
-//                do {
-//
-//                }while ()
+                    while (queue.isNotEmpty()
+                    ) {
 
-                while (queue.isNotEmpty()
-//                        isActive
-//                    && (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTED)
-//                        && (!stopStateMachine)
-//                    && (vpnService.stateService == EnumStateService.SERVICE_START)
-                ) {
-                    Log.d(TAG, "queue.size2 = ${queue.size}")
-                    queue.poll()
-                    Log.e(
-                        TAG, "vpnService.stateService: {${vpnService.stateService}} " +
-                                "stateAndSettings.state: {${stateAndSettings.vpn_state}} " +
-                                "stateAndSettings.networkTransport: {${stateAndSettings.networkTransport}}"
-                    )
-                    // 2 если stateService=Start и (VPN_CONNECTED или VPN_CONNECTING) и (TRANSPORT_HOMEWIFI или TRANSPORT_NONE) --- дисконнект-впн
-                    if (((vpnService.stateService == EnumStateService.SERVICE_START)
-                                && ((stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED)
-                                || (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTING))
-                                && ((stateAndSettings.networkTransport == EnumTransport.TRANSPORT_HOMEWIFI)
-                                || (stateAndSettings.networkTransport == EnumTransport.TRANSPORT_NONE))
+                        Log.d(TAG, "queue.size2 = ${queue.size}")
+                        queue.poll()
+                        Log.e(
+                            TAG,
+                            "vpnService.stateService: {${
+                                BoolPreference.HOME_CONNECTOR.getValue(
+                                    PreferenceManager.getDefaultSharedPreferences(
+                                        vpnService.applicationContext
+                                    )
                                 )
-                        // 3 если stateService=Stop и (VPN_CONNECTED или VPN_CONNECTING) --- дисконнект-впн
-                        || ((vpnService.stateService == EnumStateService.SERVICE_STOP)
+                            }} " +
+                                    "stateAndSettings.state: {${stateAndSettings.vpn_state}} " +
+                                    "stateAndSettings.networkTransport: {${stateAndSettings.networkTransport}}"
+                        )
+                        // 2 если stateService=Start и (VPN_CONNECTED или VPN_CONNECTING) и (TRANSPORT_HOMEWIFI или TRANSPORT_NONE) --- дисконнект-впн
+                        if (((BoolPreference.HOME_CONNECTOR.getValue(
+                                PreferenceManager.getDefaultSharedPreferences(
+                                    vpnService.applicationContext
+                                )
+                            ))
+                                    && ((stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED)
+                                    || (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTING))
+                                    && ((stateAndSettings.networkTransport == EnumTransport.TRANSPORT_HOMEWIFI)
+                                    || (stateAndSettings.networkTransport == EnumTransport.TRANSPORT_NONE))
+                                    )
+                            // 3 если stateService=Stop и (VPN_CONNECTED или VPN_CONNECTING) --- дисконнект-впн
+                            || ((!BoolPreference.HOME_CONNECTOR.getValue(
+                                PreferenceManager.getDefaultSharedPreferences(
+                                    vpnService.applicationContext
+                                )
+                            ))
 //                                    && ((stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED)
 //                                    || (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTING))
-                                )
-                        || (reconnectionSettings.currentCount != 0)
-                    ) {
+                                    )
+                            || (reconnectionSettings.currentCount != 0)
+                        ) {
 
 //                        disconnect()
-                        Log.i(TAG, "*****start fun disconnect()*****")
-                        stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTING
-                        controlQueue.add(0)
-                        // release ConnectivityManager resource
-                        observer?.close() // смотри внутрь .close()
-                        // no more packets needed to be retrieved
-                        ipTerminal.release()
-                        jobData?.cancel()
-                        jobEncapsulate?.cancel()
-                        // wait until SstpClient.sendLastGreeting() is invoked
-                        jobIncoming?.join()
-                        // wait until jobControl finishes sending messages
-                        try {
-                            withTimeout(10_000) {
-                                while (isActive) {
-                                    if (jobControl?.isCompleted == false) {
-                                        delay(1)
-                                    } else break
+                            Log.i(TAG, "*****start fun disconnect()*****")
+                            stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTING
+                            controlQueue.add(0)
+                            // release ConnectivityManager resource
+                            observer?.close() // смотри внутрь .close()
+                            // no more packets needed to be retrieved
+                            ipTerminal.release()
+                            jobData?.cancel()
+                            jobEncapsulate?.cancel()
+                            // wait until SstpClient.sendLastGreeting() is invoked
+                            jobIncoming?.join()
+                            // wait until jobControl finishes sending messages
+                            try {
+                                withTimeout(10_000) {
+                                    while (isActive) {
+                                        if (jobControl?.isCompleted == false) {
+                                            delay(1)
+                                        } else break
+                                    }
                                 }
+                            } catch (ex: TimeoutCancellationException) {
+                                Log.e(
+                                    TAG,
+                                    "*****Timeout jobControl?.isCompleted in disconnect()*****"
+                                )
                             }
-                        } catch (ex: TimeoutCancellationException) {
-                            Log.e(
+                            // avoid jobControl being stuck with socket
+                            sslTerminal.release()
+                            // ensure jobControl is completed
+                            jobControl?.cancel()
+                            Log.i(
                                 TAG,
-                                "*****Timeout jobControl?.isCompleted in disconnect()*****"
+                                "*****end disconnect()***** stateAndSettings.vpn_state = ${stateAndSettings.vpn_state}"
                             )
-                        }
-                        // avoid jobControl being stuck with socket
-                        sslTerminal.release()
-                        // ensure jobControl is completed
-                        jobControl?.cancel()
-                        Log.i(
-                            TAG,
-                            "*****end disconnect()***** stateAndSettings.vpn_state = ${stateAndSettings.vpn_state}"
-                        )
 
 //                        waitDisconnect()
-                        Log.i(TAG, "*****start fun waitDisconnect()*****")
-                        // ждем VPN_DISCONNECTED
-                        val result = withTimeoutOrNull(10_000) {
-                            while (isActive) {
+                            Log.i(TAG, "*****start fun waitDisconnect()*****")
+                            // ждем VPN_DISCONNECTED
+                            val result = withTimeoutOrNull(10_000) {
+                                while (isActive) {
 //                if (vpnService.stateService != EnumStateService.SERVICE_START) {
 //                    Log.i(TAG, "Service=Stop - exit!!!")
 //                    return@withTimeoutOrNull
 //                }
-                                if (stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTING) {
-                                    Log.i(
-                                        TAG,
-                                        "wait VPN_DISCONNECTED stateAndSettings.state=${stateAndSettings.vpn_state}"
-                                    )
-                                    delay(500)
-                                } else if (stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTED) {
+                                    if (stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTING) {
+                                        Log.i(
+                                            TAG,
+                                            "wait VPN_DISCONNECTED stateAndSettings.state=${stateAndSettings.vpn_state}"
+                                        )
+                                        delay(500)
+                                    } else if (stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTED) {
 //                                        Log.d(TAG, "VPN_DISCONNECTED_1 !!!")
-                                    return@withTimeoutOrNull
+                                        return@withTimeoutOrNull
 //                } else {
 //                    Log.i(TAG, "other state - exit!!!")
 //                    return@withTimeoutOrNull
-                                }
-                                if (stateAndSettings.vpn_net == "no") {
-                                    stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
+                                    }
+                                    if (stateAndSettings.vpn_net == "no") {
+                                        stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
 //                                        Log.d(TAG, "VPN_DISCONNECTED_2 !!!")
+                                    }
                                 }
                             }
-                        }
-                        if (result == null) {
-                            Log.i(TAG, "Timeout VPN_DISCONNECTING")
-                            stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
-                        }
+                            if (result == null) {
+                                Log.i(TAG, "Timeout VPN_DISCONNECTING")
+                                stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
+                            }
 
-                    }
-                    // 1 если stateService=Start и (VPN_DISCONNECTED или VPN_DISCONNECTING) и (TRANSPORT_WIFI или TRANSPORT_CELLULAR) --- коннект-впн
-                    if ((vpnService.stateService == EnumStateService.SERVICE_START)
-                        && ((stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTED)
-                                || (stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTING))
-                        && ((stateAndSettings.networkTransport == EnumTransport.TRANSPORT_WIFI)
-                                || (stateAndSettings.networkTransport == EnumTransport.TRANSPORT_CELLULAR))
-                    ) {
+                        }
+                        // 1 если stateService=Start и (VPN_DISCONNECTED или VPN_DISCONNECTING) и (TRANSPORT_WIFI или TRANSPORT_CELLULAR) --- коннект-впн
+                        if ((BoolPreference.HOME_CONNECTOR.getValue(
+                                PreferenceManager.getDefaultSharedPreferences(
+                                    vpnService.applicationContext
+                                )
+                            ))
+                            && ((stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTED)
+                                    || (stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTING))
+                            && ((stateAndSettings.networkTransport == EnumTransport.TRANSPORT_WIFI)
+                                    || (stateAndSettings.networkTransport == EnumTransport.TRANSPORT_CELLULAR))
+                        ) {
 
 //                        connect()
-                        if (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTING) {
-                            Log.i(TAG, "*****start fun connect*****")
-                            stateAndSettings.vpn_state = enumStateVPN.VPN_CONNECTING
-                            initialize()
-                            if (networkSetting.LOG_DO_SAVE_LOG && logStream == null) {
-                                prepareLog()
+                            if (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTING) {
+                                Log.i(TAG, "*****start fun connect*****")
+                                stateAndSettings.vpn_state = enumStateVPN.VPN_CONNECTING
+                                initialize()
+                                if (networkSetting.LOG_DO_SAVE_LOG && logStream == null) {
+                                    prepareLog()
+                                }
+                                prepareLayers()
+                                launchJobIncoming()
+                                launchJobControl()
                             }
-                            prepareLayers()
-                            launchJobIncoming()
-                            launchJobControl()
-                        }
 //                        waitConnect()
-                        Log.i(TAG, "*****start fun waitConnect*****")
-                        // ждем VPN_CONNECTED
-                        val result = withTimeoutOrNull(10_000) {
-                            while (isActive) {
+                            Log.i(TAG, "*****start fun waitConnect*****")
+                            // ждем VPN_CONNECTED
+                            val result = withTimeoutOrNull(10_000) {
+                                while (isActive) {
 //                if (vpnService.stateService != EnumStateService.SERVICE_START) {
 //                    Log.i(TAG, "Service=Stop - exit!!!")
 //                    return@withTimeoutOrNull
 //                }
-                                if (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTING) {
-                                    delay(500)
-                                    Log.i(
-                                        TAG,
-                                        "wait VPN_CONNECTED stateAndSettings.state=${stateAndSettings.vpn_state}"
-                                    )
-                                } else if (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED) {
-                                    Log.i(TAG, "VPN_CONNECTED!!!")
-                                    reconnectionSettings.resetCount()
-                                    return@withTimeoutOrNull
+                                    if (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTING) {
+                                        delay(500)
+                                        Log.i(
+                                            TAG,
+                                            "wait VPN_CONNECTED stateAndSettings.state=${stateAndSettings.vpn_state}"
+                                        )
+                                    } else if (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED) {
+                                        Log.i(TAG, "VPN_CONNECTED!!!")
+                                        reconnectionSettings.resetCount()
+                                        return@withTimeoutOrNull
 //                } else {
 //                    Log.i(TAG, "other state - exit!!!")
 //                    return@withTimeoutOrNull
-                                }
+                                    }
 //                                if (queue.isNotEmpty()) {
 //                                    return@withTimeoutOrNull true
 //                                }
+                                }
+                            }
+                            if (reconnectionSettings.currentCount != 0) {
+                                val delay_ms: Long = reconnectionSettings.getDelay_ms()
+                                Log.i(
+                                    TAG,
+                                    "***** delay before reconnect #${reconnectionSettings.currentCount} $delay_ms ms *****"
+                                )
+                                delay(delay_ms)
+                            }
+                            if ((result == null)
+                                || (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTED)
+                            ) {
+                                Log.i(TAG, "Timeout VPN_CONNECTING -> tryReconnecting")
+                                reconnectionSettings.consumeCount()
+                                if (queue.isEmpty()) {
+                                    queue.add(null)
+                                }
+                                reconnectionSettings.setStartTime()
                             }
                         }
-                        if (reconnectionSettings.currentCount != 0) {
-                            val delay_ms: Long = reconnectionSettings.getDelay_ms()
-                            Log.i(
-                                TAG,
-                                "***** delay before reconnect #${reconnectionSettings.currentCount} $delay_ms ms *****"
-                            )
-                            delay(delay_ms)
-                        }
-                        if ((result == null)
-                            || (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTED)
-                        ) {
-                            Log.i(TAG, "Timeout VPN_CONNECTING -> tryReconnecting")
-                            reconnectionSettings.consumeCount()
-                            if (queue.isEmpty()) {
-                                queue.add(null)
-                            }
-                            reconnectionSettings.setStartTime()
-                        }
-                    }
-                    checkNetworks()
+                        checkNetworks()
 //                    delay(1000L)
-                    if (jobStateMachine != null) {
-                        Log.d(
-                            TAG,
-                            "*4* в while job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
-                                    + " .isCompleted = ${jobStateMachine!!.isCompleted}"
-                                    + " .isCancelled = ${jobStateMachine!!.isCancelled}"
-                                    + " mutex = ${mutex.isLocked}"
-                        )
-                    }
+                        if (jobStateMachine != null) {
+                            Log.d(
+                                TAG,
+                                "*4* в while job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
+                                        + " .isCompleted = ${jobStateMachine!!.isCompleted}"
+                                        + " .isCancelled = ${jobStateMachine!!.isCancelled}"
+                                        + " mutex = ${mutex.isLocked}"
+                            )
+                        }
 //                        if (vpnService.stateService != EnumStateService.SERVICE_START) {
 //                            stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
 //                            reconnectionSettings.resetCount()
@@ -414,17 +412,17 @@ internal class ControlClient(internal val vpnService: MainService) :
 //                        if(queue.isEmpty()){
 //                            jobStateMachine = null
 //                        }
-                } // while
-                if (jobStateMachine != null) {
-                    Log.d(
-                        TAG,
-                        "*2* вышли из while job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
-                                + " .isCompleted = ${jobStateMachine!!.isCompleted}"
-                                + " .isCancelled = ${jobStateMachine!!.isCancelled}"
-                                + " queue.size = ${queue.size}"
-                    )
-                }
-//                } // mutex
+                    } // while
+                    if (jobStateMachine != null) {
+                        Log.d(
+                            TAG,
+                            "*2* вышли из while job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
+                                    + " .isCompleted = ${jobStateMachine!!.isCompleted}"
+                                    + " .isCancelled = ${jobStateMachine!!.isCancelled}"
+                                    + " queue.size = ${queue.size}"
+                        )
+                    }
+                } // mutex
                 jobStateMachine = null
                 reconnectionSettings.resetCount()
 //                checkNetworks()
@@ -968,10 +966,14 @@ internal class ControlClient(internal val vpnService: MainService) :
         val summary = mutableListOf<String>()
         summary.add(SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.getDefault()).format(Date()))
         summary.add("")
-        if (vpnService.stateService != EnumStateService.SERVICE_START) {
+        if (!BoolPreference.HOME_CONNECTOR.getValue(
+                PreferenceManager.getDefaultSharedPreferences(
+                    vpnService.applicationContext
+                )
+            )
+        ) {
             summary.add("Service stopped")
         } else {
-
             summary.add("[Cellular] ${stateAndSettings.cellular_state}")
             summary.add("")
 

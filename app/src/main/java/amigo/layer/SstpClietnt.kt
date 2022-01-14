@@ -210,7 +210,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
                 sendLastGreeting()
                 parent.vpnService.helper.updateNotification("Обрыв соединения")
                 parent.stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
-                parent.launchJobStateMachine()
+                parent.run()
                 Log.e(TAG, "*****status.sstp10: " + status.sstp)
             }
         }

@@ -42,7 +42,7 @@ internal class MainService : VpnService() {
     //    private var builder: NotificationCompat.Builder? = null
 //    internal val CHANNEL_ID = "HomeClient"
     var controlClient: ControlClient? = null
-    internal var stateService = EnumStateService.ENUM_NULL
+//    internal var stateService = EnumStateService.ENUM_NULL
     internal val helper by lazy { NotificationHelper(this) }
 
 //    lateinit var cm: ConnectivityManager
@@ -74,13 +74,13 @@ internal class MainService : VpnService() {
                         .toString()
                 )
                 controlClient?.checkNetworks()
-                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost WiFi: ${network}")
                 controlClient?.checkNetworks()
-                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
                 super.onLinkPropertiesChanged(network, linkProperties)
@@ -106,13 +106,13 @@ internal class MainService : VpnService() {
                         .toString()
                 )
                 controlClient?.checkNetworks()
-                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost CELLULAR: ${network}")
                 controlClient?.checkNetworks()
-                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
                 super.onLinkPropertiesChanged(network, linkProperties)
@@ -215,19 +215,19 @@ internal class MainService : VpnService() {
             BoolPreference.HOME_CONNECTOR.getValue(
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
         )
-        var newState: EnumStateService
-//        val old_state = state
-//        Log.d(TAG, "intent = " + intent)
-//        Log.d(TAG, "intent.action = " + intent?.action)
-        if (intent != null && intent.action != null) intent.action.let {
-            Log.d(TAG, "intent.action = " + it)
-            newState = EnumStateService.valueOf(it!!)
-            //                state = it
-            Log.d(TAG, "newState = " + newState)
-        } else {
-            Log.e(TAG, "intent.action = null")
-            newState = EnumStateService.ENUM_NULL
-        }
+//        var newState: EnumStateService
+////        val old_state = state
+////        Log.d(TAG, "intent = " + intent)
+////        Log.d(TAG, "intent.action = " + intent?.action)
+//        if (intent != null && intent.action != null) intent.action.let {
+//            Log.d(TAG, "intent.action = " + it)
+//            newState = EnumStateService.valueOf(it!!)
+//            //                state = it
+//            Log.d(TAG, "newState = " + newState)
+//        } else {
+//            Log.e(TAG, "intent.action = null")
+//            newState = EnumStateService.ENUM_NULL
+//        }
 
 //        if (!valHOME_CONNECTOR) {
 ////        } else {
@@ -238,57 +238,37 @@ internal class MainService : VpnService() {
 ////            }
 //        }
 
-        if (newState != EnumStateService.ENUM_NULL) {
-//            queue.add(newState)
-            Log.d(TAG, "valHOME_CONNECTOR = " + valHOME_CONNECTOR)
-        }
+//        if (newState != EnumStateService.ENUM_NULL) {
+////            queue.add(newState)
+//            Log.d(TAG, "valHOME_CONNECTOR = " + valHOME_CONNECTOR)
+//        }
 //        StatusPreference.CONNECTEDVIA.setValue(
 //            PreferenceManager.getDefaultSharedPreferences(
 //                applicationContext
 //            ), queue.size.toString()
 //        )
 
-        stateService = newState
+//        stateService = newState
 
-        if (stateService == EnumStateService.SERVICE_STOP) {
-//                            state = false
-//                            Log.d(TAG, "fStopService")
-//                            Log.d(TAG, "ACTION_DISCONNECT")
-            controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
-//                controlClient = null // 21.12.2021+
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                stopForeground(true)
-            }
-            stopSelf()
-            return START_NOT_STICKY
-        } else if (valHOME_CONNECTOR) { // запущено
-            if (stateService == EnumStateService.SERVICE_START) {
-//                controlClient?.run()
-                controlClient?.launchJobStateMachine() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
-//                Log.d(TAG, "controlClient!!.run()")
-//            }
-//                            return START_STICKY
-
-            } else if (stateService == EnumStateService.TEST) {
-                Log.d(TAG, "!!!!!!!!!!!!!! TEST !!!!!!!!!!!!!!!!!!!!")
-            } else {
-                Log.d(TAG, "else:")
-            }
+        if (valHOME_CONNECTOR) {
+                            Log.d(TAG, "service start!!!")
+            controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
             startForeground(
                 NotificationHelper.NOTIFICATION_ID,
                 helper.getNotification()
             )
+                Toast.makeText(applicationContext, "service start!!!", Toast.LENGTH_SHORT).show()
             return START_STICKY
-        } else { // не запущено
+        } else {
+            Log.d(TAG, "service stop!!!")
+                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                stopForeground(true)
+            }
+            stopSelf()
+            Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_SHORT).show()
             return START_NOT_STICKY
-        }
-
-//        if (valHOME_CONNECTOR) { // запущено
-//            return START_STICKY
-//        } else { // не запущено
-//            return START_NOT_STICKY
-//        }
-
+            }
 
 //        val status = intent?.getStringExtra("action")
 //        Log.d(TAG, "intent?.getStringExtra: status :" + status)
