@@ -17,7 +17,6 @@ import com.app.amigo.unit.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import org.chromium.base.Log
 import java.io.BufferedOutputStream
 import java.nio.ByteBuffer
@@ -98,7 +97,7 @@ internal class ControlClient(internal val vpnService: MainService) :
     val TAG = "@!@ControlClient"
     private var prefs = PreferenceManager.getDefaultSharedPreferences(vpnService.applicationContext)
 
-    //    private val queue: Queue<Throwable> = LinkedList()
+    private val queue: Queue<Any> = LinkedList()
     internal lateinit var networkSetting: NetworkSetting
     internal lateinit var status: DualClientStatus
     internal lateinit var builder: VpnService.Builder
@@ -152,13 +151,7 @@ internal class ControlClient(internal val vpnService: MainService) :
     }
 
     init {
-//        status = DualClientStatus()
-        //        stateAndSettings.isVPNConnected = false
         initialize()
-//        sslTerminal = SslTerminal(this)
-//        sstpClient = SstpClient(this)
-//        pppClient = PppClient(this)
-//        ipTerminal = IpTerminal(this)
     }
 
     fun initialize() {
@@ -203,38 +196,26 @@ internal class ControlClient(internal val vpnService: MainService) :
 //                        + " mutex = ${mutex.isLocked}"
 //            )
 //        }
-        var stopStateMachine = false
+//        var stopStateMachine = false
+//        stopStateMachine = false
+//        mutex.lock()
+//        mutex.unlock()
 
-
-        if (mutex.isLocked) {
-            suspend {
-                while (mutex.isLocked) {
-                    stopStateMachine = true
-                    delay(100)
-                    Log.e(
-                        TAG,
-                        "while (mutex.isLocked)"
-
-                    )
-                }
-            }
-        }
-
-        jobStateMachine?.cancel()
-
-        stopStateMachine = false
-        jobStateMachine = launch(handler, CoroutineStart.LAZY) {
-            mutex.withLock {
+        Log.d(TAG, "queue.size1 = ${queue.size}")
+        queue.add(null)
+        if ((jobStateMachine == null) || ((jobStateMachine?.isCompleted == true) || (jobStateMachine?.isCancelled == true))){
+//            reconnectionSettings.resetCount()
+            jobStateMachine = launch() {
+//                mutex.withLock {
                 if (jobStateMachine != null) {
                     Log.d(
                         TAG,
-                        "*3* launch job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
+                        "*1* launch job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
                                 + " .isCompleted = ${jobStateMachine!!.isCompleted}"
                                 + " .isCancelled = ${jobStateMachine!!.isCancelled}"
                                 + " mutex = ${mutex.isLocked}"
                     )
                 }
-                Log.i(TAG, "***** start job jobStateMaсhine!!!!!!!!!!!!!!!!")
                 checkNetworks()
                 Log.e(
                     TAG,
@@ -247,11 +228,14 @@ internal class ControlClient(internal val vpnService: MainService) :
 //
 //                }while ()
 
-                while (isActive
+                while (queue.isNotEmpty()
+//                        isActive
 //                    && (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTED)
-                    && (!stopStateMachine)
+//                        && (!stopStateMachine)
 //                    && (vpnService.stateService == EnumStateService.SERVICE_START)
                 ) {
+                    Log.d(TAG, "queue.size2 = ${queue.size}")
+                    queue.poll()
                     Log.e(
                         TAG, "vpnService.stateService: {${vpnService.stateService}} " +
                                 "stateAndSettings.state: {${stateAndSettings.vpn_state}} " +
@@ -266,8 +250,9 @@ internal class ControlClient(internal val vpnService: MainService) :
                                 )
                         // 3 если stateService=Stop и (VPN_CONNECTED или VPN_CONNECTING) --- дисконнект-впн
                         || ((vpnService.stateService == EnumStateService.SERVICE_STOP)
-                                && ((stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED)
-                                || (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTING)))
+//                                    && ((stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED)
+//                                    || (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTING))
+                                )
                         || (reconnectionSettings.currentCount != 0)
                     ) {
 
@@ -293,7 +278,10 @@ internal class ControlClient(internal val vpnService: MainService) :
                                 }
                             }
                         } catch (ex: TimeoutCancellationException) {
-                            Log.e(TAG, "*****Timeout jobControl?.isCompleted in disconnect()*****")
+                            Log.e(
+                                TAG,
+                                "*****Timeout jobControl?.isCompleted in disconnect()*****"
+                            )
                         }
                         // avoid jobControl being stuck with socket
                         sslTerminal.release()
@@ -320,7 +308,7 @@ internal class ControlClient(internal val vpnService: MainService) :
                                     )
                                     delay(500)
                                 } else if (stateAndSettings.vpn_state == enumStateVPN.VPN_DISCONNECTED) {
-                                    Log.d(TAG, "VPN_DISCONNECTED_1 !!!")
+//                                        Log.d(TAG, "VPN_DISCONNECTED_1 !!!")
                                     return@withTimeoutOrNull
 //                } else {
 //                    Log.i(TAG, "other state - exit!!!")
@@ -328,7 +316,7 @@ internal class ControlClient(internal val vpnService: MainService) :
                                 }
                                 if (stateAndSettings.vpn_net == "no") {
                                     stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
-                                    Log.d(TAG, "VPN_DISCONNECTED_2 !!!")
+//                                        Log.d(TAG, "VPN_DISCONNECTED_2 !!!")
                                 }
                             }
                         }
@@ -347,17 +335,17 @@ internal class ControlClient(internal val vpnService: MainService) :
                     ) {
 
 //                        connect()
-                        Log.i(TAG, "*****start fun connect*****")
-                        stateAndSettings.vpn_state = enumStateVPN.VPN_CONNECTING
-                        initialize()
-                        if (networkSetting.LOG_DO_SAVE_LOG && logStream == null) {
-                            prepareLog()
+                        if (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTING) {
+                            Log.i(TAG, "*****start fun connect*****")
+                            stateAndSettings.vpn_state = enumStateVPN.VPN_CONNECTING
+                            initialize()
+                            if (networkSetting.LOG_DO_SAVE_LOG && logStream == null) {
+                                prepareLog()
+                            }
+                            prepareLayers()
+                            launchJobIncoming()
+                            launchJobControl()
                         }
-//        inform("Establish VPN connection", null)
-                        prepareLayers()
-                        launchJobIncoming()
-                        launchJobControl()
-
 //                        waitConnect()
                         Log.i(TAG, "*****start fun waitConnect*****")
                         // ждем VPN_CONNECTED
@@ -381,6 +369,9 @@ internal class ControlClient(internal val vpnService: MainService) :
 //                    Log.i(TAG, "other state - exit!!!")
 //                    return@withTimeoutOrNull
                                 }
+//                                if (queue.isNotEmpty()) {
+//                                    return@withTimeoutOrNull true
+//                                }
                             }
                         }
                         if (reconnectionSettings.currentCount != 0) {
@@ -391,9 +382,14 @@ internal class ControlClient(internal val vpnService: MainService) :
                             )
                             delay(delay_ms)
                         }
-                        if ((result == null) || (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTED)) {
+                        if ((result == null)
+                            || (stateAndSettings.vpn_state != enumStateVPN.VPN_CONNECTED)
+                        ) {
                             Log.i(TAG, "Timeout VPN_CONNECTING -> tryReconnecting")
                             reconnectionSettings.consumeCount()
+                            if (queue.isEmpty()) {
+                                queue.add(null)
+                            }
                             reconnectionSettings.setStartTime()
                         }
                     }
@@ -408,39 +404,47 @@ internal class ControlClient(internal val vpnService: MainService) :
                                     + " mutex = ${mutex.isLocked}"
                         )
                     }
-                    if (vpnService.stateService != EnumStateService.SERVICE_START) {
-                        stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
-                        reconnectionSettings.resetCount()
-                    }
-                    if (reconnectionSettings.currentCount == 0) {
-                        break
-                    }
+//                        if (vpnService.stateService != EnumStateService.SERVICE_START) {
+//                            stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
+//                            reconnectionSettings.resetCount()
+//                        }
+//                        if (reconnectionSettings.currentCount == 0) {
+//                            break
+//                        }
+//                        if(queue.isEmpty()){
+//                            jobStateMachine = null
+//                        }
                 } // while
                 if (jobStateMachine != null) {
                     Log.d(
                         TAG,
-                        "*5* вышли из while job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
+                        "*2* вышли из while job ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
+                                + " .isCompleted = ${jobStateMachine!!.isCompleted}"
+                                + " .isCancelled = ${jobStateMachine!!.isCancelled}"
+                                + " queue.size = ${queue.size}"
+                    )
+                }
+//                } // mutex
+                jobStateMachine = null
+                reconnectionSettings.resetCount()
+//                checkNetworks()
+                refreshStatus()
+                if (jobStateMachine != null) {
+                    Log.d(
+                        TAG,
+                        "*6* вышли из mutex ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
                                 + " .isCompleted = ${jobStateMachine!!.isCompleted}"
                                 + " .isCancelled = ${jobStateMachine!!.isCancelled}"
                                 + " mutex = ${mutex.isLocked}"
                     )
                 }
-            } // mutex
-            if (jobStateMachine != null) {
-                Log.d(
-                    TAG,
-                    "*6* вышли из mutex ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
-                            + " .isCompleted = ${jobStateMachine!!.isCompleted}"
-                            + " .isCancelled = ${jobStateMachine!!.isCancelled}"
-                            + " mutex = ${mutex.isLocked}"
-                )
-            }
+
+            } // launch
         }
-        jobStateMachine?.start()
         if (jobStateMachine != null) {
             Log.d(
                 TAG,
-                "*7* после jobStateMaсhine?.start() ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
+                "*3* после jobStateMaсhine?.start() ** jobStateMaсhine!!.isActive = ${jobStateMachine!!.isActive}"
                         + " .isCompleted = ${jobStateMachine!!.isCompleted}"
                         + " .isCancelled = ${jobStateMachine!!.isCancelled}"
                         + " mutex = ${mutex.isLocked}"

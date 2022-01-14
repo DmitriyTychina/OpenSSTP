@@ -211,7 +211,8 @@ internal class MainService : VpnService() {
 //                "!!!!!!!!!!!!!!!!! status.ppp = ${controlClient!!.status.ppp.toString()}  status.sstp = ${controlClient!!.status.sstp.toString()}"
 //            )
 //        }
-        val valHOME_CONNECTOR = BoolPreference.HOME_CONNECTOR.getValue(
+        val valHOME_CONNECTOR =
+            BoolPreference.HOME_CONNECTOR.getValue(
             PreferenceManager.getDefaultSharedPreferences(applicationContext)
         )
         var newState: EnumStateService
