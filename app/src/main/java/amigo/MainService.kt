@@ -371,9 +371,9 @@ internal class MainService : VpnService() {
         BoolPreference.HOME_CONNECTOR.setEnabled(true)
     }
 
-    fun proceed() {
-        TODO("Not yet implemented")
-    }
+//    fun proceed() {
+//        TODO("Not yet implemented")
+//    }
 
 //    private val networkRequest: NetworkRequest = NetworkRequest.Builder()
 //        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)

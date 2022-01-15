@@ -58,7 +58,9 @@ internal class NetworkObserver(val parent: ControlClient) {
                     TAG,
                     "onLinkPropertiesChanged VPN: ${network} linkProperties: $linkProperties"
                 )
-//                parent.refreshStatus()0
+                parent.stateAndSettings.vpn_ip = linkProperties.linkAddresses.toString()
+                parent.stateAndSettings.vpn_dns = linkProperties.dnsServers.toString()
+                parent.refreshStatus()
                 //                makeSummary(linkProperties).also {
 //                    prefs.edit().putString(StatusPreference.STATUS.name, it).apply()
 //                }

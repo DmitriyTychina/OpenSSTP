@@ -164,7 +164,7 @@ internal class ControlClient(internal val vpnService: MainService) :
     private val mutex = Mutex()
 //    private var isClosing = true
 
-    private  val handler = CoroutineExceptionHandler { _, exception ->
+    private val handler = CoroutineExceptionHandler { _, exception ->
         Log.e(TAG, "***** start exception exception.localizedMessage ${exception.localizedMessage}")
 //        if (stateAndSettings.isVPNConnected) {
         Log.d(TAG, "INFO jobIncoming: ${jobIncoming}")
@@ -213,15 +213,15 @@ internal class ControlClient(internal val vpnService: MainService) :
 
         if ((getJobRun() == null)/* || (jobStateMachine?.isCompleted == true) || (jobStateMachine?.isCancelled == true)*/) {
 //            reconnectionSettings.resetCount()
-            Log.d(TAG, "START JOB0")
+//            Log.d(TAG, "START JOB0")
             var stop = false
-            Log.d(TAG, "START JOB1")
+//            Log.d(TAG, "START JOB1")
             setJobRun(launch() {
-                Log.d(TAG, "START JOB2")
-                if(channel.isEmpty) channel.send(0)
-                Log.d(TAG, "START JOB3")
+                Log.d(TAG, "START JOB")
+                if (channel.isEmpty) channel.send(0)
+//                Log.d(TAG, "START JOB3")
                 while (!stop) {
-                    Log.d(TAG, "START JOB4")
+//                    Log.d(TAG, "START JOB4")
                     if (!reconnectionSettings.isReconnection) channel.receive()
 
                     Log.e(
@@ -566,7 +566,7 @@ internal class ControlClient(internal val vpnService: MainService) :
 //        vpnService.stopForeground(true)
 //        vpnService.stopSelf()
         StatusPreference.STATUS.setValue(prefs, "")
-        StatusPreference.CONNECTEDVIA.setValue(prefs, "")
+//        StatusPreference.CONNECTEDVIA.setValue(prefs, "")
 //        stateAndSettings.isVPNConnected = false
 //        BoolPreference.HOME_CONNECTOR.setEnabled(true)
     }
@@ -969,38 +969,23 @@ internal class ControlClient(internal val vpnService: MainService) :
             summary.add("")
 
             summary.add("[VPN net] ${stateAndSettings.vpn_net}")
+            var VPNstatus = ""
             if (reconnectionSettings.isReconnection) {
                 summary.add("[VPN status] ${reconnectionSettings.generateMessage()}")
 
             } else {
-                summary.add("[VPN status] ${stateAndSettings.vpn_state.value}")
-
+                when (stateAndSettings.vpn_state) {
+                    enumStateVPN.VPN_CONNECTING -> VPNstatus = "Подключение..."
+                    enumStateVPN.VPN_CONNECTED -> VPNstatus = "Подключено!!!"
+                    enumStateVPN.VPN_DISCONNECTING -> VPNstatus = "Отключение..."
+                    enumStateVPN.VPN_DISCONNECTED -> VPNstatus = "Отключено"
+                }
+                summary.add("[VPN status] $VPNstatus")
+                if (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED) {
+                    summary.add("[IP address] ${stateAndSettings.vpn_ip}")
+                    summary.add("[DNS servers] ${stateAndSettings.vpn_dns}")
+                }
             }
-            summary.add("[VPN status] ${reconnectionSettings.generateMessage()}")
-
-
-//            summary.add("[Assigned IP Address]")
-//            properties.linkAddresses.forEach {
-//                summary.add(it.address.hostAddress)
-//            }
-//            summary.add("")
-//
-//            summary.add("[DNS server]")
-//            properties.dnsServers.forEach {
-//                summary.add(it.hostAddress)
-//            }
-//            summary.add("")
-//
-//            summary.add("[Route]")
-//            properties.routes.forEach {
-//                summary.add(it.toString())
-//            }
-//            summary.add("")
-//
-//            summary.add("[SSL/TLS parameters]")
-//            summary.add("PROTOCOL: ${parent.sslTerminal.socket.session.protocol}")
-//            summary.add("SUITE: ${parent.sslTerminal.socket.session.cipherSuite}")
-
         }
         StatusPreference.STATUS.setValue(prefs, summary.reduce { acc, s -> acc + "\n" + s })
     }

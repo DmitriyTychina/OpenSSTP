@@ -19,7 +19,7 @@ import com.google.android.gms.common.AccountPicker
 private val homePreferences = arrayOf<PreferenceWrapper<*>>(
     StatusPreference.ACCOUNT,
     BoolPreference.HOME_CONNECTOR,
-    StatusPreference.CONNECTEDVIA,
+//    StatusPreference.CONNECTEDVIA,
     StatusPreference.STATUS,
 )
 
@@ -48,8 +48,8 @@ class HomeFragment : PreferenceFragmentCompat() {
 //        val linearLayout = findViewById<PreferenceScreen>(R.id.SwitchPreferenceCompat)
         if (BoolPreference.HOME_CONNECTOR.getValue(preferenceManager.sharedPreferences)) {
             startVPN()
-        } else {
-            StatusPreference.CONNECTEDVIA.setValue(preferenceManager.sharedPreferences, "")
+//        } else {
+//            StatusPreference.CONNECTEDVIA.setValue(preferenceManager.sharedPreferences, "")
 //            preferenceManager.sharedPreferences.edit().putString(StatusPreference.STATUS.name, "").apply()
 //            BoolPreference.HOME_CONNECTOR.setEnabled(true)
         }
@@ -77,11 +77,11 @@ class HomeFragment : PreferenceFragmentCompat() {
                             it.setValueFragment(it.getValue(prefs))
                         }
                     }
-                    StatusPreference.CONNECTEDVIA.name -> {
-                        StatusPreference.CONNECTEDVIA.also {
-                            it.setValueFragment(it.getValue(prefs))
-                        }
-                    }
+//                    StatusPreference.CONNECTEDVIA.name -> {
+//                        StatusPreference.CONNECTEDVIA.also {
+//                            it.setValueFragment(it.getValue(prefs))
+//                        }
+//                    }
                 }
             }
         preferenceManager.sharedPreferences.registerOnSharedPreferenceChangeListener(
