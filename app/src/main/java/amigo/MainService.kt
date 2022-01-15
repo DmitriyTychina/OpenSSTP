@@ -1,5 +1,6 @@
 package com.app.amigo
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.*
@@ -42,7 +43,8 @@ internal class MainService : VpnService() {
     //    private var builder: NotificationCompat.Builder? = null
 //    internal val CHANNEL_ID = "HomeClient"
     var controlClient: ControlClient? = null
-//    internal var stateService = EnumStateService.ENUM_NULL
+
+    //    internal var stateService = EnumStateService.ENUM_NULL
     internal val helper by lazy { NotificationHelper(this) }
 
 //    lateinit var cm: ConnectivityManager
@@ -59,6 +61,7 @@ internal class MainService : VpnService() {
 //        initTTS()
 //        initSensors()
         initNetworkRequest()
+        BoolPreference.HOME_CONNECTOR.setEnabled(true)
     }
 
     private fun initNetworkRequest() {
@@ -74,22 +77,25 @@ internal class MainService : VpnService() {
                         .toString()
                 )
                 controlClient?.checkNetworks()
-                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                controlClient?.launchJobRun() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
+
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost WiFi: ${network}")
                 controlClient?.checkNetworks()
-                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                controlClient?.launchJobRun() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
+
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
                 super.onLinkPropertiesChanged(network, linkProperties)
                 Log.e(TAG, "onLinkPropertiesChanged WiFi: ${network} ---- ${linkProperties}")
-                if(controlClient != null){
-                if(controlClient!!.stateAndSettings.wifi_dns != linkProperties.dnsServers.toString()) {
-                    controlClient!!.stateAndSettings.wifi_dns = linkProperties.dnsServers.toString()
-                    controlClient!!.refreshStatus()
-                }
+                if (controlClient != null) {
+                    if (controlClient!!.stateAndSettings.wifi_dns != linkProperties.dnsServers.toString()) {
+                        controlClient!!.stateAndSettings.wifi_dns =
+                            linkProperties.dnsServers.toString()
+                        controlClient!!.refreshStatus()
+                    }
                 }
             }
         }
@@ -106,14 +112,16 @@ internal class MainService : VpnService() {
                         .toString()
                 )
                 controlClient?.checkNetworks()
-                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                controlClient?.launchJobRun() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
+
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost CELLULAR: ${network}")
                 controlClient?.checkNetworks()
-                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                controlClient?.launchJobRun() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
+
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
                 super.onLinkPropertiesChanged(network, linkProperties)
                 Log.e(TAG, "onLinkPropertiesChanged CELLULAR: ${network} ---- ${linkProperties}")
@@ -124,13 +132,23 @@ internal class MainService : VpnService() {
             it.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
             it.build()
         }
-        callbackRequestWIFI?.let { getSystemService(ConnectivityManager::class.java).registerNetworkCallback(requestWIFI, it) }
+        callbackRequestWIFI?.let {
+            getSystemService(ConnectivityManager::class.java).registerNetworkCallback(
+                requestWIFI,
+                it
+            )
+        }
 
         val requestCELLULAR = NetworkRequest.Builder().let {
             it.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
             it.build()
         }
-        callbackRequestCELLULAR?.let { getSystemService(ConnectivityManager::class.java).registerNetworkCallback(requestCELLULAR, it) }
+        callbackRequestCELLULAR?.let {
+            getSystemService(ConnectivityManager::class.java).registerNetworkCallback(
+                requestCELLULAR,
+                it
+            )
+        }
     }
 
     private fun initControlClient() {
@@ -140,7 +158,7 @@ internal class MainService : VpnService() {
 //                helper.updateNotification("update")
 //                beForegrounded() // уведомление о работе vpn
 //                Log.d(TAG, "beForegrounded!!!!!")
-//                it.launchJobService()
+                it.initJobRun()
             }
         }
     }
@@ -203,22 +221,17 @@ internal class MainService : VpnService() {
         }
     }
 
+    @SuppressLint("WrongConstant")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
-//        if (controlClient != null) {
-//            Log.e(
-//                TAG,
-//                "!!!!!!!!!!!!!!!!! status.ppp = ${controlClient!!.status.ppp.toString()}  status.sstp = ${controlClient!!.status.sstp.toString()}"
-//            )
-//        }
         val valHOME_CONNECTOR =
             BoolPreference.HOME_CONNECTOR.getValue(
-            PreferenceManager.getDefaultSharedPreferences(applicationContext)
-        )
+                PreferenceManager.getDefaultSharedPreferences(applicationContext)
+            )
 //        var newState: EnumStateService
 ////        val old_state = state
 ////        Log.d(TAG, "intent = " + intent)
-////        Log.d(TAG, "intent.action = " + intent?.action)
+        Log.d(TAG, "intent.action = " + intent?.action)
 //        if (intent != null && intent.action != null) intent.action.let {
 //            Log.d(TAG, "intent.action = " + it)
 //            newState = EnumStateService.valueOf(it!!)
@@ -250,25 +263,31 @@ internal class MainService : VpnService() {
 
 //        stateService = newState
 
-        if (valHOME_CONNECTOR) {
-                            Log.d(TAG, "service start!!!")
-            controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
+        if (EnumStateService.SERVICE_START.name == intent?.action ?: false) {
+            Log.d(TAG, "service start!!!")
+            controlClient?.launchJobRun() // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
             startForeground(
                 NotificationHelper.NOTIFICATION_ID,
                 helper.getNotification()
             )
-                Toast.makeText(applicationContext, "service start!!!", Toast.LENGTH_SHORT).show()
+            Toast.makeText(applicationContext, "service start!!!", Toast.LENGTH_SHORT).show()
             return START_STICKY
-        } else {
+        } else if (EnumStateService.SERVICE_STOP.name == intent?.action ?: false) {
             Log.d(TAG, "service stop!!!")
-                controlClient?.run() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+            controlClient?.launchJobRun() // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 stopForeground(true)
             }
             stopSelf()
             Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_SHORT).show()
-            return START_NOT_STICKY
+            return STOP_FOREGROUND_REMOVE
+        } else {
+            if (valHOME_CONNECTOR) {
+                return START_STICKY
+            } else {
+                return START_NOT_STICKY
             }
+        }
 
 //        val status = intent?.getStringExtra("action")
 //        Log.d(TAG, "intent?.getStringExtra: status :" + status)
@@ -331,9 +350,17 @@ internal class MainService : VpnService() {
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
         super.onDestroy()
-        callbackRequestWIFI?.let { getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(it) }
+        callbackRequestWIFI?.let {
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(
+                it
+            )
+        }
         callbackRequestWIFI = null
-        callbackRequestCELLULAR?.let { getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(it) }
+        callbackRequestCELLULAR?.let {
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(
+                it
+            )
+        }
         callbackRequestCELLULAR = null
 //        cm.unregisterNetworkCallback(networkCallback)
         unregisterReceiver(broadcastReceiver)
@@ -341,6 +368,7 @@ internal class MainService : VpnService() {
 //        controlClient = null
         Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_LONG).show()
         controlClient?.logStream?.close()
+        BoolPreference.HOME_CONNECTOR.setEnabled(true)
     }
 
     fun proceed() {

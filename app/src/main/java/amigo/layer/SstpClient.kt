@@ -172,7 +172,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
 //                parent.sslTerminal.release()//**del?
                 status_sstp_old = status.sstp
                 Log.e(TAG, "*****status.sstp2: Подключаемся...")
-                parent.sslTerminal.initializeSocket()
+                parent.run { sslTerminal?.initializeSocket() }
                 Log.e(TAG, "*****status.sstp3: Подключаемся...")
                 sendCallConnectRequest()
                 Log.e(TAG, "*****status.sstp4: Подключаемся...")
@@ -210,7 +210,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
                 sendLastGreeting()
                 parent.vpnService.helper.updateNotification("Обрыв соединения")
                 parent.stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
-                parent.run()
+                parent.launchJobRun()
                 Log.e(TAG, "*****status.sstp10: " + status.sstp)
             }
         }

@@ -38,7 +38,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
 //    var event_battery: Boolean? = null
 //    var connection_list: String? = null
 
-    @SuppressLint("RestrictedApi")
+//    @SuppressLint("RestrictedApi")
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         Log.d(TAG, "onReceive.action=$action")
@@ -67,7 +67,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
         }
 
         if (action == WifiManager.WIFI_STATE_CHANGED_ACTION) {
-//            Log.d(TAG, "WIFI_STATE_CHANGED_ACTION")
+            Log.d(TAG, "WIFI_STATE_CHANGED_ACTION")
 
 //            VpnService.prepare(context)
 //            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -78,7 +78,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
         }
 
         if (action == WifiManager.NETWORK_STATE_CHANGED_ACTION) {
-//            Log.d(TAG, "NETWORK_STATE_CHANGED_ACTION")
+            Log.d(TAG, "NETWORK_STATE_CHANGED_ACTION")
 
 //            val nwInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO)
 //            nwInfo.getState()

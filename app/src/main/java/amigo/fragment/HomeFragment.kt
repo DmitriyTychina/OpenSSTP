@@ -125,7 +125,7 @@ class HomeFragment : PreferenceFragmentCompat() {
         Log.d(TAG, "attachConnectorChangeListener")
         findPreference<TwoStatePreference>(BoolPreference.HOME_CONNECTOR.name)!!.also {
             it.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, newState ->
-//                it.isEnabled = false
+                it.isEnabled = false
                 if (newState == true) {
                     return@OnPreferenceChangeListener startVPN()
                 } else {

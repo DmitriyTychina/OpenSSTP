@@ -37,11 +37,11 @@ internal class IncomingBuffer(capacity: Int, private val parent: ControlClient) 
     private fun supply() {
         try {
             buffer.limit(
-                buffer.limit() + parent.sslTerminal.socket.inputStream.read(
+                buffer.limit() + parent.sslTerminal?.socket?.inputStream?.read(
                     buffer.array(),
                     buffer.limit(),
                     buffer.capacity() - buffer.limit()
-                )
+                )!!
             )
 
         } catch (e: SocketTimeoutException) {
@@ -50,7 +50,7 @@ internal class IncomingBuffer(capacity: Int, private val parent: ControlClient) 
 
     internal fun convey() {
         val length = pppLimit - buffer.position()
-        parent.ipTerminal.ipOutput.write(buffer.array(), buffer.position(), length)
+        parent.ipTerminal?.ipOutput?.write(buffer.array(), buffer.position(), length)
         buffer.position(buffer.position() + length)
     }
 

@@ -94,8 +94,8 @@ internal class NetworkObserver(val parent: ControlClient) {
         summary.add("")
 
         summary.add("[SSL/TLS parameters]")
-        summary.add("PROTOCOL: ${parent.sslTerminal.socket.session.protocol}")
-        summary.add("SUITE: ${parent.sslTerminal.socket.session.cipherSuite}")
+        summary.add("PROTOCOL: ${parent.sslTerminal?.socket?.session?.protocol}")
+        summary.add("SUITE: ${parent.sslTerminal?.socket?.session?.cipherSuite}")
 
         return summary.reduce { acc, s ->
             acc + "\n" + s
