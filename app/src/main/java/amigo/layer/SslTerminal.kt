@@ -2,7 +2,7 @@ package com.app.amigo.layer
 
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
-import com.app.amigo.ControlClient
+import com.app.amigo.ControlClientVPN
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.BufferedInputStream
@@ -15,7 +15,7 @@ import java.security.cert.X509Certificate
 import javax.net.ssl.*
 
 
-internal class SslTerminal(parent: ControlClient) : Terminal(parent) {
+internal class SslTerminal(parent: ControlClientVPN) : Terminal(parent) {
     private val mutex = Mutex()
     internal lateinit var socket: SSLSocket
 

@@ -1,6 +1,6 @@
 package com.app.amigo.layer
 
-import com.app.amigo.ControlClient
+import com.app.amigo.ControlClientVPN
 import com.app.amigo.misc.*
 import com.app.amigo.negotiator.*
 import com.app.amigo.unit.*
@@ -19,7 +19,7 @@ internal enum class Ipv6cpState {
     REQ_SENT, ACK_RCVD, ACK_SENT, OPENED
 }
 
-internal class PppClient(parent: ControlClient) : Client(parent) {
+internal class PppClient(parent: ControlClientVPN) : Client(parent) {
     internal var globalIdentifier: Byte = -1
     internal var currentLcpRequestId: Byte = 0
     internal var currentIpcpRequestId: Byte = 0

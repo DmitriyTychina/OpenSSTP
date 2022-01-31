@@ -2,13 +2,13 @@ package com.app.amigo.misc
 
 import android.net.*
 import androidx.preference.PreferenceManager
-import com.app.amigo.ControlClient
+import com.app.amigo.ControlClientVPN
 import com.app.amigo.fragment.StatusPreference
 import org.chromium.base.Log
 import java.text.SimpleDateFormat
 import java.util.*
 
-internal class NetworkObserver(val parent: ControlClient) {
+internal class NetworkObserver(val parent: ControlClientVPN) {
     private val manager = parent.vpnService.getSystemService(ConnectivityManager::class.java)
     private var TAG = "@!@NetworkObserver"
 
@@ -35,7 +35,7 @@ internal class NetworkObserver(val parent: ControlClient) {
                     "NetworkCapabilities onAvailable: " + manager.getNetworkCapabilities(network)
                         .toString()
                 )
-                parent.checkNetworks()
+//                parent.checkNetworks()
 //                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
 //                    manager.getLinkProperties(network)?.also { linkProperties ->
 //                        makeSummary(linkProperties).also {
@@ -43,12 +43,14 @@ internal class NetworkObserver(val parent: ControlClient) {
 //                        }
 //                    }
 //                }
+//                parent?.launchJobRun(1)
             }
 
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost VPN: ${network}")
-                parent.checkNetworks()
+//                parent.checkNetworks()
+//                parent?.launchJobRun(2)
             }
 
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {

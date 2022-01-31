@@ -1,7 +1,7 @@
 package com.app.amigo.layer
 
 import android.util.Log
-import com.app.amigo.ControlClient
+import com.app.amigo.ControlClientVPN
 import com.app.amigo.enumStateVPN
 import com.app.amigo.misc.*
 import com.app.amigo.negotiator.*
@@ -10,7 +10,7 @@ import com.app.amigo.unit.PPP_HEADER
 import com.app.amigo.unit.PacketType
 
 
-internal class SstpClient(parent: ControlClient) : Client(parent) {
+internal class SstpClient(parent: ControlClientVPN) : Client(parent) {
     internal val negotiationTimer = Timer(60_000L)
     internal val negotiationCounter = Counter(3)
     internal val echoTimer = Timer(10_000L)
@@ -210,7 +210,7 @@ internal class SstpClient(parent: ControlClient) : Client(parent) {
                 sendLastGreeting()
                 parent.vpnService.helper.updateNotification("Обрыв соединения")
                 parent.stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
-                parent.launchJobRun()
+                parent.launchJobRun(9)
                 Log.e(TAG, "*****status.sstp10: " + status.sstp)
             }
         }

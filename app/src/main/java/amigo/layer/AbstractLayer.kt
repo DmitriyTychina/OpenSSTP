@@ -1,6 +1,6 @@
 package com.app.amigo.layer
 
-import com.app.amigo.ControlClient
+import com.app.amigo.ControlClientVPN
 
 
 internal enum class PppStatus {
@@ -49,7 +49,7 @@ internal class Timer(private val maxLength: Long) {
     }
 }
 
-internal abstract class Client(internal val parent: ControlClient) {
+internal abstract class Client(internal val parent: ControlClientVPN) {
     internal val status = parent.status
     internal var status_sstp_old = parent.status.sstp
     internal val incomingBuffer = parent.incomingBuffer
@@ -58,6 +58,6 @@ internal abstract class Client(internal val parent: ControlClient) {
     internal abstract fun proceed() // just check its state or timers, not bytes
 }
 
-internal abstract class Terminal(protected val parent: ControlClient) {
+internal abstract class Terminal(protected val parent: ControlClientVPN) {
     internal abstract fun release()
 }

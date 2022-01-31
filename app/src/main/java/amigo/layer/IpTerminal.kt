@@ -1,7 +1,7 @@
 package com.app.amigo.layer
 
 import android.os.ParcelFileDescriptor
-import com.app.amigo.ControlClient
+import com.app.amigo.ControlClientVPN
 import com.app.amigo.misc.isSame
 import com.app.amigo.misc.toHexByteArray
 import java.io.FileInputStream
@@ -10,7 +10,7 @@ import java.net.InetAddress
 import java.nio.ByteBuffer
 
 
-internal class IpTerminal(parent: ControlClient) : Terminal(parent) {
+internal class IpTerminal(parent: ControlClientVPN) : Terminal(parent) {
     private lateinit var fd: ParcelFileDescriptor
 
     internal lateinit var ipInput: FileInputStream
