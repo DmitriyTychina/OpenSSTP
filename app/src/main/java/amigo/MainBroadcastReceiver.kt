@@ -52,6 +52,7 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
 //        service.action = "broadcast"
         if (flagautostart && (action == "android.intent.action.BOOT_COMPLETED" ||
                     action == "android.intent.action.QUICKBOOT_POWERON" ||
+                    action == "android.intent.action.MY_PACKAGE_REPLACED" || //+ 06.02.2022
                     action == "com.htc.intent.action.QUICKBOOT_POWERON")
         ) {
             VpnService.prepare(context) // 23.12.2021-

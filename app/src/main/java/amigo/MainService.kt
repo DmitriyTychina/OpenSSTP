@@ -332,7 +332,7 @@ internal class MainService : VpnService(), MqttCallback {
             }
             stopSelf()
             Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_SHORT).show()
-            return STOP_FOREGROUND_REMOVE
+            return START_NOT_STICKY
         } else {
             if (valHOME_CONNECTOR) {
                 return START_STICKY
