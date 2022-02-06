@@ -1,6 +1,6 @@
 package com.app.amigo.misc
 
-import com.app.amigo.ControlClientVPN
+import com.app.amigo.ControlClient
 import com.app.amigo.unit.DataUnit
 import org.chromium.base.Log
 import java.io.BufferedOutputStream
@@ -28,7 +28,7 @@ internal class Ticker(private val key:String, private val logStream: BufferedOut
     }
 }
 
-internal fun ControlClientVPN.inform(message: String, cause: Throwable?) {
+internal fun ControlClient.inform(message: String, cause: Throwable?) {
     val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
     var printing = "[$currentTime] $message"
     cause?.also {
@@ -43,34 +43,34 @@ internal fun ControlClientVPN.inform(message: String, cause: Throwable?) {
     logStream?.write(printing.toByteArray())
 }
 
-internal fun ControlClientVPN.informDataUnitParsingError(unit: DataUnit<*>, cause: DataUnitParsingError) {
+internal fun ControlClient.informDataUnitParsingError(unit: DataUnit<*>, cause: DataUnitParsingError) {
     inform("Failed to parse ${unit::class.simpleName}", cause)
 }
 
-internal fun ControlClientVPN.informTimerOver(where: KFunction<*>) {
+internal fun ControlClient.informTimerOver(where: KFunction<*>) {
     inform("The timer was over: ${where.name}", null)
 }
 
-internal fun ControlClientVPN.informCounterExhausted(where: KFunction<*>) {
+internal fun ControlClient.informCounterExhausted(where: KFunction<*>) {
     inform("The counter was exhausted: ${where.name}", null)
 }
 
-internal fun ControlClientVPN.informOptionRejected(option: DataUnit<*>) {
+internal fun ControlClient.informOptionRejected(option: DataUnit<*>) {
     inform("${option::class.simpleName} was rejected", null)
 }
 
-internal fun ControlClientVPN.informInvalidUnit(where: KFunction<*>) {
+internal fun ControlClient.informInvalidUnit(where: KFunction<*>) {
     inform("Received an invalid unit: ${where.name}", null)
 }
 
-internal fun ControlClientVPN.informAuthenticationFailed(where: KFunction<*>) {
+internal fun ControlClient.informAuthenticationFailed(where: KFunction<*>) {
     inform("Failed to be authenticated: ${where.name}", null)
 }
 
-internal fun ControlClientVPN.informReceivedCallDisconnect(where: KFunction<*>) {
+internal fun ControlClient.informReceivedCallDisconnect(where: KFunction<*>) {
     inform("Received a Call Disconnect: ${where.name}", null)
 }
 
-internal fun ControlClientVPN.informReceivedCallAbort(where: KFunction<*>) {
+internal fun ControlClient.informReceivedCallAbort(where: KFunction<*>) {
     inform("Received a Call Abort: ${where.name}", null)
 }

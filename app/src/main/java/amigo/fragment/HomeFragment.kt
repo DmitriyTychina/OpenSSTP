@@ -129,7 +129,7 @@ class HomeFragment : PreferenceFragmentCompat() {
                 if (newState == true) {
                     return@OnPreferenceChangeListener startVPN()
                 } else {
-                    startMainService(EnumStateService.SERVICE_STOPPING)
+                    startMainService(EnumStateService.SERVICE_STOP)
                 }
                 true
             }

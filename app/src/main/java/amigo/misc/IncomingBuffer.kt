@@ -1,12 +1,12 @@
 package com.app.amigo.misc
 
-import com.app.amigo.ControlClientVPN
+import com.app.amigo.ControlClient
 import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import kotlin.math.max
 
 
-internal class IncomingBuffer(capacity: Int, private val parent: ControlClientVPN) {
+internal class IncomingBuffer(capacity: Int, private val parent: ControlClient) {
     private val buffer = ByteBuffer.allocate(capacity).also {
         it.limit(0)
         it.mark()
