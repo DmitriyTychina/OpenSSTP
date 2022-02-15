@@ -3,6 +3,7 @@ package com.app.amigo.misc
 import android.net.*
 import androidx.preference.PreferenceManager
 import com.app.amigo.ControlClientVPN
+import com.app.amigo.EnumStateService
 import com.app.amigo.fragment.StatusPreference
 import org.chromium.base.Log
 import java.text.SimpleDateFormat
@@ -35,7 +36,9 @@ internal class NetworkObserver(val parent: ControlClientVPN) {
                     "NetworkCapabilities onAvailable: " + manager.getNetworkCapabilities(network)
                         .toString()
                 )
-//                parent.checkNetworks()
+                parent.setActionToService(EnumStateService.SERVICE_STARTED)
+
+                parent.checkNetworks()
 //                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
 //                    manager.getLinkProperties(network)?.also { linkProperties ->
 //                        makeSummary(linkProperties).also {

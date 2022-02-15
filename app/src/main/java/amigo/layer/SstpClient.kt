@@ -172,7 +172,15 @@ internal class SstpClient(parent: ControlClientVPN) : Client(parent) {
 //                parent.sslTerminal.release()//**del?
                 status_sstp_old = status.sstp
                 Log.e(TAG, "*****status.sstp2: Подключаемся...")
-                parent.run { sslTerminal?.initializeSocket() }
+                Log.e(TAG, "*****sslTerminal: " + parent.sslTerminal)
+//                parent.run { sslTerminal?.initializeSocket() }
+//                parent.sslTerminal?.initializeSocket()
+                Log.e(TAG, "*****createSocket")
+                parent.sslTerminal?.createSocket()
+                Log.e(TAG, "*****establishHttpLayer")
+                parent.sslTerminal?.establishHttpLayer()
+                Log.e(TAG, "*****end")
+
                 Log.e(TAG, "*****status.sstp3: Подключаемся...")
                 sendCallConnectRequest()
                 Log.e(TAG, "*****status.sstp4: Подключаемся...")

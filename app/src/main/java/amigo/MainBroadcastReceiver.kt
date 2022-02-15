@@ -1,6 +1,5 @@
 package com.app.amigo
 
-import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -46,16 +45,17 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
         val prefs =
             PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
 //        val flagautostart = sharedPreferences.getBoolean("HOME_CONNECTOR", false)
-        val flagautostart = BoolPreference.HOME_CONNECTOR.getValue(prefs)
+        val autostart = BoolPreference.HOME_CONNECTOR.getValue(prefs)
 
 //        Toast.makeText(context.applicationContext, "action=$action", Toast.LENGTH_LONG).show()
 //        service.action = "broadcast"
-        if (flagautostart && (action == "android.intent.action.BOOT_COMPLETED" ||
+        if (autostart && (action == "android.intent.action.BOOT_COMPLETED" ||
                     action == "android.intent.action.QUICKBOOT_POWERON" ||
                     action == "android.intent.action.MY_PACKAGE_REPLACED" || //+ 06.02.2022
                     action == "com.htc.intent.action.QUICKBOOT_POWERON")
         ) {
-            VpnService.prepare(context) // 23.12.2021-
+            // запускаем сервис
+            VpnService.prepare(context)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.applicationContext.startForegroundService(
                     service.setAction(EnumStateService.SERVICE_START.name)

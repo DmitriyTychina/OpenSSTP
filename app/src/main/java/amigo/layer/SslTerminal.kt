@@ -1,6 +1,7 @@
 package com.app.amigo.layer
 
 import android.net.Uri
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.app.amigo.ControlClientVPN
 import kotlinx.coroutines.sync.Mutex
@@ -47,7 +48,7 @@ internal class SslTerminal(parent: ControlClientVPN) : Terminal(parent) {
         return tmFactory.trustManagers
     }
 
-    private fun createSocket() {
+    fun createSocket() {
         val socketFactory = if (parent.networkSetting.SSL_DO_ADD_CERT) {
             val context = SSLContext.getInstance(parent.networkSetting.SSL_VERSION) as SSLContext
             context.init(null, createTrustManagers(), null)
@@ -91,7 +92,7 @@ internal class SslTerminal(parent: ControlClientVPN) : Terminal(parent) {
         socket.startHandshake()
     }
 
-    private fun establishHttpLayer() {
+    fun establishHttpLayer() {
         val input = InputStreamReader(socket.inputStream, "US-ASCII")
         val output = OutputStreamWriter(socket.outputStream, "US-ASCII")
         val HTTP_REQUEST = arrayOf(
@@ -120,8 +121,12 @@ internal class SslTerminal(parent: ControlClientVPN) : Terminal(parent) {
     }
 
     internal fun initializeSocket() {
+        val TAG = "sslTrminal"
+        Log.e(TAG, "*****createSocket")
         createSocket()
+        Log.e(TAG, "*****establishHttpLayer")
         establishHttpLayer()
+        Log.e(TAG, "*****end")
     }
 
     internal suspend fun send(bytes: ByteBuffer) {

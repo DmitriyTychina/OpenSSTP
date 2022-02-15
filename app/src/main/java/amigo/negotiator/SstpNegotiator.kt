@@ -130,7 +130,8 @@ internal fun SstpClient.sendLastGreeting() {
     sending.update()
     parent.controlQueue.add(sending)
 
-//    throw SuicideException() //--- 12.01.22
+//    throw Exception("Kill this client as intended")
+//    throw SuicideException() //- 12.01.22
 }
 
 internal fun SstpClient.receiveCallConnectAck() {

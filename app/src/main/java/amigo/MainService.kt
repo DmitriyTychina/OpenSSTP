@@ -13,17 +13,20 @@ import androidx.preference.PreferenceManager
 import com.app.amigo.fragment.BoolPreference
 import com.app.amigo.fragment.IntPreference
 import com.app.amigo.fragment.StrPreference
+import kotlinx.coroutines.delay
 import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken
-import org.eclipse.paho.client.mqttv3.MqttCallback
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions
-import org.eclipse.paho.client.mqttv3.MqttMessage
+import org.eclipse.paho.client.mqttv3.*
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
+import org.xml.sax.Parser
+import java.io.IOException
+import java.io.UnsupportedEncodingException
 
 internal enum class EnumStateService(val value: String) {
     ENUM_NULL("com.app.amigo.NULL"),
     DIALOG_ACCOUNT("com.app.amigo.DIALOG_ACCOUNT"),
     DIALOG_VPN("com.app.amigo.DIALOG_VPN"),
     SERVICE_START("com.app.amigo.SERVICE_START"),
+    SERVICE_STARTED("com.app.amigo.SERVICE_STARTED"),
 
     TEST("com.app.amigo.TEST"),
 
@@ -43,11 +46,18 @@ internal enum class EnumTransport(val value: String) {
     TRANSPORT_NONE("NONE"),
 }
 
+internal enum class EnumStateTransport(val value: String) {
+    STATE_TRANSPORT_NULL("NULL"),
+    STATE_TRANSPORT_CONNECT("Connect"),
+    STATE_TRANSPORT_LOST("Lost"),
+//    STATE_TRANSPORT_NULL("NONE"),
+}
 
 internal class MainService : VpnService(), MqttCallback {
     private var TAG = "@!@MainService"
     private var broadcastReceiver: MainBroadcastReceiver? = null
     private var callbackRequestWIFI: ConnectivityManager.NetworkCallback? = null
+    internal var stateWIFI: EnumStateTransport = EnumStateTransport.STATE_TRANSPORT_NULL
     private var callbackRequestCELLULAR: ConnectivityManager.NetworkCallback? = null
 
     //    private var builder: NotificationCompat.Builder? = null
@@ -68,10 +78,321 @@ internal class MainService : VpnService(), MqttCallback {
     private var mqttLogin: String = ""
     private var mqttPass: String = ""
     private var mqttDevice: String = ""
+    private val clientId = "HomeClient"
 
-    override fun connectionLost(cause: Throwable?) {}
+    override fun onCreate() {
+        super.onCreate()
+        prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        Log.d(TAG, "onCreate")
+//        initNoti()
+//        notificationManager = this.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+        initSettings()
+        initControlClient()
+//        initMQTT()
+        initReceiver()
+//        initTTS()
+//        initSensors()
+        initNetworkRequest()
+        BoolPreference.HOME_CONNECTOR.setEnabled(true)
+    }
 
-    @Throws(Exception::class)
+    private fun initSettings() {
+        prefs = PreferenceManager.getDefaultSharedPreferences(this)
+    }
+
+    private fun initControlClient() {
+        if (controlClient == null) {
+            Log.d(TAG, "new ControlClient")
+            controlClient = ControlClientVPN(this).also {
+//                helper.updateNotification("update")
+//                beForegrounded() // уведомление о работе vpn
+//                Log.d(TAG, "beForegrounded!!!!!")
+                it.initJobRun()
+            }
+        }
+    }
+
+    private fun initMQTT() {
+        Log.i(TAG, "Start initMQTT")
+        mqttIP = StrPreference.MQTT_HOST.getValue(prefs)
+        mqttPort = IntPreference.MQTT_PORT.getValue(prefs).toString()
+        mqttLogin = StrPreference.MQTT_USER.getValue(prefs)
+        mqttPass = StrPreference.MQTT_PASS.getValue(prefs)
+        mqttDevice = StrPreference.HOME_USER.getValue(prefs) // ???
+        serverUri = "tcp://$mqttIP:$mqttPort"
+        MQTTclient = MqttAndroidClient(application, serverUri, mqttDevice)
+        options = MqttConnectOptions()
+        options.isAutomaticReconnect = true
+        options.isCleanSession = false
+//        options.mqttVersion = 4
+
+        if (mqttLogin.isNotBlank()) options.userName = mqttLogin
+        if (mqttPass.isNotBlank()) options.password = mqttPass.toCharArray()
+
+        MQTTclient!!.setCallback(this)
+
+
+    }
+
+    private fun initReceiver() {
+//        val filter = IntentFilter()
+//
+//        if (settings.getBoolean(
+//                "event_wifi",
+//                false
+//            )
+//        ) filter.addAction("android.net.wifi.STATE_CHANGE")
+//        if (settings.getBoolean(
+//                "event_call",
+//                false
+//            )
+//        ) filter.addAction("android.intent.action.PHONE_STATE")
+////        if(settings.getBoolean("event_call", false)) filter.addAction("android.intent.action.PHONE_STATE");
+//        //        if(settings.getBoolean("event_call", false)) filter.addAction("android.intent.action.PHONE_STATE");
+//        if (settings.getBoolean(
+//                "event_sms",
+//                false
+//            )
+//        ) filter.addAction("android.provider.Telephony.SMS_RECEIVED")
+//
+//        if (settings.getBoolean("event_battery", false)) {
+//            filter.addAction("android.intent.action.BATTERY_LOW")
+//            filter.addAction(Intent.ACTION_POWER_CONNECTED)
+//            filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+//            filter.addAction(Intent.ACTION_BATTERY_CHANGED)
+//        }
+//        if (settings.getBoolean("event_display", false)) {
+//            filter.addAction(Intent.ACTION_SCREEN_ON)
+//            filter.addAction(Intent.ACTION_SCREEN_OFF)
+//        }
+//
+//        broadcastReceiver = MainReceiver()
+//        registerReceiver(broadcastReceiver, filter)
+
+        if (broadcastReceiver == null) {
+            val filter = IntentFilter()
+//            filter.addAction("android.net.wifi.STATE_CHANGE")
+//            filter.addAction("android.intent.action.PHONE_STATE")
+//            filter.addAction("android.intent.action.PHONE_STATE")
+//            filter.addAction("android.provider.Telephony.SMS_RECEIVED")
+//            filter.addAction("android.intent.action.BATTERY_LOW")
+//            filter.addAction(Intent.ACTION_POWER_CONNECTED)
+//            filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+//            filter.addAction(Intent.ACTION_BATTERY_CHANGED)
+//            filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+            filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
+            filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
+            filter.addAction(Intent.ACTION_SCREEN_ON)
+            filter.addAction(Intent.ACTION_SCREEN_OFF)
+            broadcastReceiver = MainBroadcastReceiver()
+            registerReceiver(broadcastReceiver, filter)
+        }
+    }
+
+    @SuppressLint("WrongConstant")
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        val valHOME_CONNECTOR =
+            BoolPreference.HOME_CONNECTOR.getValue(prefs)
+//        var newState: EnumStateService
+////        val old_state = state
+////        Log.d(TAG, "intent = " + intent)
+        Log.d(TAG, "intent.action = " + intent?.action)
+
+        if (EnumStateService.SERVICE_START.name == intent?.action ?: false) {
+            Log.d(TAG, "service start!!!")
+            controlClient?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
+            startForeground(
+                NotificationHelper.NOTIFICATION_ID,
+                helper.getNotification()
+            )
+            Toast.makeText(applicationContext, "service start!!!", Toast.LENGTH_SHORT).show()
+            return START_STICKY
+        } else if (EnumStateService.SERVICE_STOPPING.name == intent?.action ?: false) {
+            Log.d(TAG, "service stopping!!!")
+//            MQTTclient!!.disconnect()
+            controlClient?.launchJobRun(4) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+            return START_STICKY
+        } else if (EnumStateService.SERVICE_STOPPED.name == intent?.action ?: false) {
+            Log.d(TAG, "service stopped!!!")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                stopForeground(true)
+            }
+            stopSelf()
+            Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_SHORT).show()
+            return START_NOT_STICKY
+        } else if (EnumStateService.SERVICE_STARTED.name == intent?.action ?: false) {
+            Log.d(TAG, "service started!!! start mqtt!!!")
+
+//            val token = MQTTclient!!.connect(options)
+//            token.actionCallback = object : IMqttActionListener {
+//                override fun onSuccess(asyncActionToken: IMqttToken) {
+//                    Log.d(TAG, "actionCallback-onSuccess: Connection")
+//                    setSubscribe()
+//                    pubOne()
+//                    Log.d(TAG, "actionCallback-onSuccess: Connected")
+////                    isStarted = true
+//                }
+//
+//                override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
+//                    Log.d(TAG, "actionCallback-onFailure: Connection Failure")
+//                    //                        toast = Toast.makeText(getApplicationContext(),
+//                    //                                "Connection Failure", Toast.LENGTH_SHORT);
+//                    //                        toast.show();
+////                                            sendBrodecast("ConnectionFailure");
+//                }
+//            }
+
+            return START_STICKY
+        } else {
+//            if (valHOME_CONNECTOR) {
+                return START_STICKY
+//            } else {
+//                return START_NOT_STICKY
+//            }
+        }
+    }
+
+//    private val iCallbackClient: MqttCallbackExtended = object : MqttCallbackExtended {
+//        override fun connectComplete(reconnect: Boolean, serverURI: String) {
+//            Log.d(TAG,"Connect Complete.")
+////            onConnect()
+//        }
+//
+//        override fun deliveryComplete(token: IMqttDeliveryToken) {}
+//        override fun connectionLost(cause: Throwable) {
+//            Log.e(TAG, "connectionLost error")
+////            scheduler.cancelMqttPing()
+////            changeState(EndpointState.DISCONNECTED.withError(cause))
+////            Log.d(TAG,"Releasing connectinglock")
+////            connectingLock.release()
+////            scheduler.scheduleMqttReconnect()
+//        }
+//
+//        override fun messageArrived(topic: String, message: MqttMessage) {
+//            Log.d(TAG, "topic: $topic value: $message")
+//            Log.d(TAG, message.toString())
+//
+//        }
+//    }
+
+
+    override fun onDestroy() {
+        Log.d(TAG, "onDestroy")
+        super.onDestroy()
+        callbackRequestWIFI?.let {
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(
+                it
+            )
+        }
+        callbackRequestWIFI = null
+        callbackRequestCELLULAR?.let {
+            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(
+                it
+            )
+        }
+        callbackRequestCELLULAR = null
+//        cm.unregisterNetworkCallback(networkCallback)
+        unregisterReceiver(broadcastReceiver)
+//        controlClient?.onCommand(null)
+//        controlClient = null
+        Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_LONG).show()
+        controlClient?.logStream?.close()
+        BoolPreference.HOME_CONNECTOR.setEnabled(true)
+    }
+
+    private fun initNetworkRequest() {
+        callbackRequestWIFI = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                super.onAvailable(network)
+                Log.e(TAG, "onAvailable WiFi: ${network}")
+                Log.d(
+                    TAG,
+                    "NetworkCapabilities onAvailable: " + getSystemService(ConnectivityManager::class.java).getNetworkCapabilities(
+                        network
+                    )
+                        .toString()
+                )
+                controlClient?.checkNetworks()
+                controlClient?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+            }
+
+            override fun onLost(network: Network) {
+                super.onLost(network)
+                Log.e(TAG, "onLost WiFi: ${network}")
+                controlClient?.checkNetworks()
+//                controlClient?.launchJobRun(6) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+            }
+
+            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+                super.onLinkPropertiesChanged(network, linkProperties)
+                Log.e(TAG, "onLinkPropertiesChanged WiFi: ${network} ---- ${linkProperties}")
+                if (controlClient != null) {
+                    if (controlClient!!.stateAndSettings.wifi_dns != linkProperties.dnsServers.toString()) {
+                        controlClient!!.stateAndSettings.wifi_dns =
+                            linkProperties.dnsServers.toString()
+                        controlClient!!.refreshStatus()
+                    }
+                }
+            }
+        }
+
+        callbackRequestCELLULAR = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                super.onAvailable(network)
+                Log.e(TAG, "onAvailable CELLULAR: ${network}")
+                Log.d(
+                    TAG,
+                    "NetworkCapabilities onAvailable: " + getSystemService(ConnectivityManager::class.java).getNetworkCapabilities(
+                        network
+                    )
+                        .toString()
+                )
+                controlClient?.checkNetworks()
+                controlClient?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+            }
+
+            override fun onLost(network: Network) {
+                super.onLost(network)
+                Log.e(TAG, "onLost CELLULAR: ${network}")
+                controlClient?.checkNetworks()
+//                controlClient?.launchJobRun(8) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+            }
+
+            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
+                super.onLinkPropertiesChanged(network, linkProperties)
+                Log.e(TAG, "onLinkPropertiesChanged CELLULAR: ${network} ---- ${linkProperties}")
+            }
+        }
+
+        val requestWIFI = NetworkRequest.Builder().let {
+            it.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            it.build()
+        }
+        callbackRequestWIFI?.let {
+            getSystemService(ConnectivityManager::class.java).registerNetworkCallback(
+                requestWIFI,
+                it
+            )
+        }
+
+        val requestCELLULAR = NetworkRequest.Builder().let {
+            it.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+            it.build()
+        }
+        callbackRequestCELLULAR?.let {
+            getSystemService(ConnectivityManager::class.java).registerNetworkCallback(
+                requestCELLULAR,
+                it
+            )
+        }
+    }
+
+    override fun connectionLost(cause: Throwable?) {
+        Log.d(TAG, "!!!!!!!!!!connectionLost: $cause")
+    }
+
+    //    @Throws(Exception::class)
     override fun messageArrived(topic: String, message: MqttMessage) {
         Log.d(TAG, "topic: $topic value: $message")
         Log.d(TAG, message.toString())
@@ -166,397 +487,90 @@ internal class MainService : VpnService(), MqttCallback {
 //            }
     }
 
-    override fun deliveryComplete(token: IMqttDeliveryToken?) {}
-
-    override fun onCreate() {
-        super.onCreate()
-        prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        Log.d(TAG, "onCreate")
-//        initNoti()
-//        notificationManager = this.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        initSettings()
-        initControlClient()
-        initMQTT()
-        initBroadReceiver()
-//        initTTS()
-//        initSensors()
-        initNetworkRequest()
-        BoolPreference.HOME_CONNECTOR.setEnabled(true)
+    override fun deliveryComplete(token: IMqttDeliveryToken?) {
+        Log.d(TAG, "!!!!!!!!!!deliveryComplete: $token")
     }
 
-    private fun initSettings() {
-        prefs = PreferenceManager.getDefaultSharedPreferences(this)
-        mqttIP = StrPreference.MQTT_HOST.getValue(prefs)
-        mqttPort = IntPreference.MQTT_PORT.getValue(prefs).toString()
-        mqttLogin = StrPreference.MQTT_USER.getValue(prefs)
-        mqttPass = StrPreference.MQTT_PASS.getValue(prefs)
-        mqttDevice = StrPreference.HOME_USER.getValue(prefs) // ???
-        serverUri = "tcp://$mqttIP:$mqttPort"
-    }
+    fun publish(topic: String, msg: String, qos: Int = 1, retained: Boolean = false) {
+        if (MQTTclient!!.isConnected) {
+            try {
+                val message = MqttMessage()
+                message.payload = msg.toByteArray()
+                message.qos = qos
+                message.isRetained = retained
+                MQTTclient!!.publish(topic, message, null, object : IMqttActionListener {
+                    override fun onSuccess(asyncActionToken: IMqttToken?) {
+                        Log.d(TAG, "$msg published to $topic")
+                    }
 
-    private fun initControlClient() {
-        if (controlClient == null) {
-            Log.d(TAG, "new ControlClient")
-            controlClient = ControlClientVPN(this).also {
-//                helper.updateNotification("update")
-//                beForegrounded() // уведомление о работе vpn
-//                Log.d(TAG, "beForegrounded!!!!!")
-                it.initJobRun()
+                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
+                        Log.d(TAG, "Failed to publish $msg to $topic")
+                    }
+                })
+            } catch (e: MqttException) {
+                e.printStackTrace()
             }
+//            try {
+//                val encodedPayload = payload.toByteArray(charset("UTF-8"))
+//                val message = MqttMessage(encodedPayload)
+//                MQTTclient!!.publish(clientId + "/" + mqttDevice + "/" + topic, message)
+//            } catch (e: UnsupportedEncodingException) {
+//                e.printStackTrace()
+//            } catch (e: MqttPersistenceException) {
+//                e.printStackTrace()
+//            } catch (e: MqttException) {
+//                e.printStackTrace()
+//            }
         }
     }
 
-    private fun initMQTT() {
-        Log.i(TAG, "Start initMQTT")
-//        MQTTclient = MqttAndroidClient(application, serverUri, mqttDevice)
-//        options = MqttConnectOptions()
-//        options.isAutomaticReconnect = true
-//        options.isCleanSession = false
-//        if (!mqttLogin.isNullOrBlank()) options.userName = mqttLogin
-//        if (!mqttPass.isNullOrBlank()) options.password = mqttPass.toCharArray()
-//        MQTTclient!!.setCallback(this)
+    private fun pubOne() {
+        publish("info/general/API", Build.VERSION.SDK_INT.toString())
+        publish("info/general/BRAND", Build.BRAND)
+        publish("info/general/BOARD", Build.BOARD)
+        publish("info/general/DISPLAY", Build.DISPLAY)
+        publish("info/general/FINGERPRINT", Build.FINGERPRINT)
+        publish("info/general/HARDWARE", Build.HARDWARE)
+        publish("info/general/HOST", Build.HOST)
+        publish("info/general/ID", Build.ID)
+        publish("info/general/BOOTLOADER", Build.BOOTLOADER)
+        publish("info/general/DEVICE", Build.DEVICE)
+
+        publish("info/general/MANUFACTURER", Build.MANUFACTURER)
+        publish("info/general/USER", Build.USER)
+        publish("info/general/MODEL", Build.MODEL)
+        publish("info/general/PRODUCT", Build.PRODUCT)
+        publish("info/general/TAGS", Build.TAGS)
+        publish("info/general/TYPE", Build.TYPE)
+        publish("info/general/UNKNOWN", Build.UNKNOWN)
+        publish("info/general/SERIAL", Build.SERIAL)
+        publish("info/general/BASE_OS", Build.VERSION.BASE_OS)
+        publish("info/general/SECURITY_PATCH", Build.VERSION.SECURITY_PATCH)
     }
 
-    private fun initBroadReceiver() {
-//        val filter = IntentFilter()
-//
-//        if (settings.getBoolean(
-//                "event_wifi",
-//                false
-//            )
-//        ) filter.addAction("android.net.wifi.STATE_CHANGE")
-//        if (settings.getBoolean(
-//                "event_call",
-//                false
-//            )
-//        ) filter.addAction("android.intent.action.PHONE_STATE")
-////        if(settings.getBoolean("event_call", false)) filter.addAction("android.intent.action.PHONE_STATE");
-//        //        if(settings.getBoolean("event_call", false)) filter.addAction("android.intent.action.PHONE_STATE");
-//        if (settings.getBoolean(
-//                "event_sms",
-//                false
-//            )
-//        ) filter.addAction("android.provider.Telephony.SMS_RECEIVED")
-//
-//        if (settings.getBoolean("event_battery", false)) {
-//            filter.addAction("android.intent.action.BATTERY_LOW")
-//            filter.addAction(Intent.ACTION_POWER_CONNECTED)
-//            filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
-//            filter.addAction(Intent.ACTION_BATTERY_CHANGED)
-//        }
-//        if (settings.getBoolean("event_display", false)) {
-//            filter.addAction(Intent.ACTION_SCREEN_ON)
-//            filter.addAction(Intent.ACTION_SCREEN_OFF)
-//        }
-//
-//        broadcastReceiver = MainReceiver()
-//        registerReceiver(broadcastReceiver, filter)
+    private fun setSubscribe() {
+        val qos = 1
+        try {
+            if (MQTTclient != null) {
+                val subToken: IMqttToken =
+                    MQTTclient!!.subscribe(clientId + "/" + mqttDevice + "/comm/*", qos)
+                subToken.actionCallback = object : IMqttActionListener {
+                    override fun onSuccess(asyncActionToken: IMqttToken) {
+                        Log.d(TAG, "setSubscribe-onSuccess: $asyncActionToken");
+                        // The message was published
+                    }
 
-        if (broadcastReceiver == null) {
-            val filter = IntentFilter()
-//            filter.addAction("android.net.wifi.STATE_CHANGE")
-//            filter.addAction("android.intent.action.PHONE_STATE")
-//            filter.addAction("android.intent.action.PHONE_STATE")
-//            filter.addAction("android.provider.Telephony.SMS_RECEIVED")
-//            filter.addAction("android.intent.action.BATTERY_LOW")
-//            filter.addAction(Intent.ACTION_POWER_CONNECTED)
-//            filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
-//            filter.addAction(Intent.ACTION_BATTERY_CHANGED)
-//            filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
-            filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
-            filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
-            filter.addAction(Intent.ACTION_SCREEN_ON)
-            filter.addAction(Intent.ACTION_SCREEN_OFF)
-            broadcastReceiver = MainBroadcastReceiver()
-            registerReceiver(broadcastReceiver, filter)
-        }
-    }
-
-    @SuppressLint("WrongConstant")
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-        val valHOME_CONNECTOR =
-            BoolPreference.HOME_CONNECTOR.getValue(prefs)
-//        var newState: EnumStateService
-////        val old_state = state
-////        Log.d(TAG, "intent = " + intent)
-        Log.d(TAG, "intent.action = " + intent?.action)
-//        if (intent != null && intent.action != null) intent.action.let {
-//            Log.d(TAG, "intent.action = " + it)
-//            newState = EnumStateService.valueOf(it!!)
-//            //                state = it
-//            Log.d(TAG, "newState = " + newState)
-//        } else {
-//            Log.e(TAG, "intent.action = null")
-//            newState = EnumStateService.ENUM_NULL
-//        }
-
-//        if (!valHOME_CONNECTOR) {
-////        } else {
-////            if (controlClient != null) {
-////                controlClient?.jobService?.cancel()
-////                controlClient?.onCommand(null)
-////                controlClient = null
-////            }
-//        }
-
-//        if (newState != EnumStateService.ENUM_NULL) {
-////            queue.add(newState)
-//            Log.d(TAG, "valHOME_CONNECTOR = " + valHOME_CONNECTOR)
-//        }
-//        StatusPreference.CONNECTEDVIA.setValue(
-//            PreferenceManager.getDefaultSharedPreferences(
-//                applicationContext
-//            ), queue.size.toString()
-//        )
-
-//        stateService = newState
-
-        if (EnumStateService.SERVICE_START.name == intent?.action ?: false) {
-            Log.d(TAG, "service start!!!")
-            controlClient?.launchJobRun(3) // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
-            startForeground(
-                NotificationHelper.NOTIFICATION_ID,
-                helper.getNotification()
-            )
-            Toast.makeText(applicationContext, "service start!!!", Toast.LENGTH_SHORT).show()
-            return START_STICKY
-        } else if (EnumStateService.SERVICE_STOPPING.name == intent?.action ?: false) {
-            Log.d(TAG, "service stopping!!!")
-            controlClient?.launchJobRun(4) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
-            return START_STICKY
-        } else if (EnumStateService.SERVICE_STOPPED.name == intent?.action ?: false) {
-            Log.d(TAG, "service stopped!!!")
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                stopForeground(true)
-            }
-            stopSelf()
-            Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_SHORT).show()
-            return START_NOT_STICKY
-        } else {
-            if (valHOME_CONNECTOR) {
-                return START_STICKY
-            } else {
-                return START_NOT_STICKY
-            }
-        }
-
-//        val status = intent?.getStringExtra("action")
-//        Log.d(TAG, "intent?.getStringExtra: status :" + status)
-//        when (status) {
-//            BCAction.ACTION_WIFI_STATE_CHANGED.value -> {
-//                controlClient?.checkNetworks()
-////                if (hasConnection()) {
-////                    startMQTT()
-////                }
-//                return START_STICKY
-//            }
-//        }
-
-//        if ((enumStateService.SERVICE_START.value == intent?.action ?: false) ||
-//            (VpnAction.ACTION_WIFI_STATE_CHANGED.value == intent?.action ?: false)
-//        ) {
-////            controlClient?.checkNetworks()
-//            if (!state ||
-//                (VpnAction.ACTION_WIFI_STATE_CHANGED.value == intent?.action ?: false)
-//            ) {
-//                Toast.makeText(applicationContext, "service start!!!", Toast.LENGTH_LONG).show()
-//                Log.d(TAG, "fStartService")
-//                state = true
-////                controlClient?.onCommand(Throwable("com.app.amigo.CONNECT"))
-//                if (controlClient == null) {
-//                    Log.d(TAG, "new ControlClient")
-//                    controlClient = ControlClient(this).also {
-//                        startForeground(
-//                            NotificationHelper.NOTIFICATION_ID,
-//                            helper.getNotification()
-//                        )
-////        helper.updateNotification("update")
-////                beForegrounded() // уведомление о работе vpn
-////                Log.d(TAG, "beForegrounded!!!!!")
-//                    }
-//                }
-//                controlClient!!.run()
-//                return START_STICKY
-//            } else {
-//                return START_NOT_STICKY
-//            }
-//        } else if (VpnAction.ACTION_DISCONNECT.value == intent?.action ?: false) {
-//            if (state) {
-//                Log.d(TAG, "fStopService")
-//                state = false
-//                Log.d(TAG, "ACTION_DISCONNECT")
-//                controlClient?.onCommand(Throwable("com.app.amigo.DISCONNECT"))
-////                controlClient = null // 21.12.2021+
-//                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-//                    stopForeground(true)
-//                }
-//                stopSelf()
-//            }
-//            return START_NOT_STICKY
-//        } else {
-//            return START_NOT_STICKY
-//        }
-    }
-
-    override fun onDestroy() {
-        Log.d(TAG, "onDestroy")
-        super.onDestroy()
-        callbackRequestWIFI?.let {
-            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(
-                it
-            )
-        }
-        callbackRequestWIFI = null
-        callbackRequestCELLULAR?.let {
-            getSystemService(ConnectivityManager::class.java)?.unregisterNetworkCallback(
-                it
-            )
-        }
-        callbackRequestCELLULAR = null
-//        cm.unregisterNetworkCallback(networkCallback)
-        unregisterReceiver(broadcastReceiver)
-//        controlClient?.onCommand(null)
-//        controlClient = null
-        Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_LONG).show()
-        controlClient?.logStream?.close()
-        BoolPreference.HOME_CONNECTOR.setEnabled(true)
-    }
-
-//    fun proceed() {
-//        TODO("Not yet implemented")
-//    }
-
-//    private val networkRequest: NetworkRequest = NetworkRequest.Builder()
-//        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-//        .build()
-//    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
-//
-//        // Called when the framework connects and has declared a new network ready for use.
-//        override fun onAvailable(network: Network) {
-//            super.onAvailable(network)
-//            Log.d(TAG, "onAvailable: $network")
-//            //*******
-//            val connManager =
-//                applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-////                val networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI)
-//            val linkProperties = connManager.getLinkProperties(network)
-//            Log.d(TAG, "LinkProperties $linkProperties")
-//
-//            val wifiManager =
-//                applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-//            val connectionInfo = wifiManager.connectionInfo
-//            if (connectionInfo != null) {
-//                Log.d(TAG, "connectionInfo: $connectionInfo")
-//            }
-//            //*******
-//            val capabilities = cm.getNetworkCapabilities(network)
-//            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true) {
-//                controlClient?.stateAndSettings?.NetworkTransport = CTransport.TRANSPORT_WIFI.value
-//            } else if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true) {
-//                controlClient?.stateAndSettings?.NetworkTransport =
-//                    CTransport.TRANSPORT_CELLULAR.value
-//            } else if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_VPN) == true) {
-//                controlClient?.stateAndSettings?.NetworkTransport = CTransport.TRANSPORT_VPN.value
-//            } else {
-//                controlClient?.stateAndSettings?.NetworkTransport = CTransport.TRANSPORT_NONE.value
-//            }
-//            Log.d(TAG, "NetworkCapabilities: " + controlClient?.stateAndSettings?.NetworkTransport)
-//        }
-//
-//        // Called when a network disconnects or otherwise no longer satisfies this request or callback
-//        override fun onLost(network: Network) {
-//            super.onLost(network)
-//            Log.d(TAG, "onLost: ${network}")
-//        }
-//    }
-
-    private fun initNetworkRequest() {
-        callbackRequestWIFI = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                super.onAvailable(network)
-                Log.e(TAG, "onAvailable WiFi: ${network}")
-                Log.d(
-                    TAG,
-                    "NetworkCapabilities onAvailable: " + getSystemService(ConnectivityManager::class.java).getNetworkCapabilities(
-                        network
-                    )
-                        .toString()
-                )
-                controlClient?.checkNetworks()
-//                controlClient?.launchJobRun(5) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
-            }
-
-            override fun onLost(network: Network) {
-                super.onLost(network)
-                Log.e(TAG, "onLost WiFi: ${network}")
-                controlClient?.checkNetworks()
-//                controlClient?.launchJobRun(6) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
-            }
-
-            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
-                super.onLinkPropertiesChanged(network, linkProperties)
-                Log.e(TAG, "onLinkPropertiesChanged WiFi: ${network} ---- ${linkProperties}")
-                if (controlClient != null) {
-                    if (controlClient!!.stateAndSettings.wifi_dns != linkProperties.dnsServers.toString()) {
-                        controlClient!!.stateAndSettings.wifi_dns =
-                            linkProperties.dnsServers.toString()
-                        controlClient!!.refreshStatus()
+                    override fun onFailure(
+                        asyncActionToken: IMqttToken,
+                        exception: Throwable
+                    ) {
+                        Log.d(TAG, "setSubscribe-onFailure: $asyncActionToken @ $exception");
                     }
                 }
             }
-        }
-
-        callbackRequestCELLULAR = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                super.onAvailable(network)
-                Log.e(TAG, "onAvailable CELLULAR: ${network}")
-                Log.d(
-                    TAG,
-                    "NetworkCapabilities onAvailable: " + getSystemService(ConnectivityManager::class.java).getNetworkCapabilities(
-                        network
-                    )
-                        .toString()
-                )
-                controlClient?.checkNetworks()
-//                controlClient?.launchJobRun(7) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
-            }
-
-            override fun onLost(network: Network) {
-                super.onLost(network)
-                Log.e(TAG, "onLost CELLULAR: ${network}")
-                controlClient?.checkNetworks()
-//                controlClient?.launchJobRun(8) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
-            }
-
-            override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
-                super.onLinkPropertiesChanged(network, linkProperties)
-                Log.e(TAG, "onLinkPropertiesChanged CELLULAR: ${network} ---- ${linkProperties}")
-            }
-        }
-
-        val requestWIFI = NetworkRequest.Builder().let {
-            it.addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            it.build()
-        }
-        callbackRequestWIFI?.let {
-            getSystemService(ConnectivityManager::class.java).registerNetworkCallback(
-                requestWIFI,
-                it
-            )
-        }
-
-        val requestCELLULAR = NetworkRequest.Builder().let {
-            it.addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-            it.build()
-        }
-        callbackRequestCELLULAR?.let {
-            getSystemService(ConnectivityManager::class.java).registerNetworkCallback(
-                requestCELLULAR,
-                it
-            )
+        } catch (e: MqttException) {
+            e.printStackTrace()
         }
     }
-
 
 }
