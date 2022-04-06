@@ -94,7 +94,6 @@ internal class NetworkSetting(prefs: SharedPreferences) {
                         false
                     }
                 }
-
                 AuthProtocol.CHAP -> {
                     if (option._length == 5 && option.holder[0] == ChapAlgorithm.MSCHAPv2.value) {
                         return if (PPP_MSCHAPv2_ENABLED) {
@@ -106,8 +105,8 @@ internal class NetworkSetting(prefs: SharedPreferences) {
                         }
                     }
                 }
+                else -> {}
             }
-
             currentAuth = if (PPP_MSCHAPv2_ENABLED) AuthSuite.MSCHAPv2 else AuthSuite.PAP
             return false
         }

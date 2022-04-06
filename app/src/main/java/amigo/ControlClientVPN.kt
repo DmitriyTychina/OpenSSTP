@@ -24,8 +24,12 @@ import com.app.amigo.unit.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.chromium.base.Log
 import java.io.BufferedOutputStream
 import java.nio.ByteBuffer
@@ -114,12 +118,13 @@ internal class ControlClientVPN(internal val vpnService: MainService) :
 //        onBufferOverflow: BufferOverflow = BufferOverflow.SUSPEND // 3
 //    ): MutableSharedFlow
 
-//    val stateFlow = MutableStateFlow<Int>(0)
-    private val ccvpn_eventSharedFlow = MutableSharedFlow<Int>(1,0,BufferOverflow.DROP_OLDEST) // 1
+    //    val stateFlow = MutableStateFlow<Int>(0)
+//    private val ccvpn_eventSharedFlow =
+//        MutableSharedFlow<Int>(1, 0, BufferOverflow.DROP_OLDEST) // 1
 
 //    val sharedViewEffects = _sharedViewEffects.asSharedFlow() // 2
-//    private val ccvpn_channel =
-//        Channel<Int>(CONFLATED) // создает канал с размером буфера равный 1. Повторный вызов offer или send перезаписывает текущее значение в буфере, при этом приостановка корутины не происходит. Поэтому ресивер будет считывать всегда самое последнее значение из канала.
+    private val ccvpn_channel =
+        Channel<Int>(CONFLATED) // создает канал с размером буфера равный 1. Повторный вызов offer или send перезаписывает текущее значение в буфере, при этом приостановка корутины не происходит. Поэтому ресивер будет считывать всегда самое последнее значение из канала.
 
 //    var number: Int = 0
 //    @Synchronized
@@ -218,19 +223,19 @@ internal class ControlClientVPN(internal val vpnService: MainService) :
     internal fun launchJobRun(idx: Int) {
         launch {
             // отправляем данные через канал
-//            mutex.withLock {
-//            if (ccvpn_channel.isEmpty)
-//                ccvpn_channel.send(idx)
-//            else {
-//                val tmp = ccvpn_channel.receive()
-//                if (idx > tmp)
-//                    ccvpn_channel.send(idx)
-//                else
-//                    ccvpn_channel.send(tmp)
-//        }
-            ccvpn_eventSharedFlow.emit(idx)
-            Log.e(TAG, "ccvpn_channel.send 1 -- $idx")
-//            }
+            mutex.withLock {
+            if (ccvpn_channel.isEmpty)
+                ccvpn_channel.send(idx)
+            else {
+                val tmp = ccvpn_channel.receive()
+                if (idx > tmp)
+                    ccvpn_channel.send(idx)
+                else
+                    ccvpn_channel.send(tmp)
+        }
+//            ccvpn_eventSharedFlow.tryEmit(idx)
+            Log.e(TAG, "ccvpn_eventSharedFlow.send 1 -- $idx")
+            }
         }
     }
 
@@ -246,21 +251,22 @@ internal class ControlClientVPN(internal val vpnService: MainService) :
 //            Log.d(TAG, "START JOB1")
             jobRun = launch {
                 Log.d(TAG, "START JOB")
-//                if (ccvpn_channel.isEmpty) {
-//                    ccvpn_channel.send(0)
-//                    Log.e(TAG, "ccvpn_channel.send 2")
+                if (ccvpn_channel.isEmpty) {
+                    ccvpn_channel.send(0)
+                    Log.e(TAG, "ccvpn_channel.send 2")
 //
 //                }
 //                Log.d(TAG, "START JOB3")
                 while (!stop) {
-                ccvpn_eventSharedFlow.collect {
-//                    Log.d(TAG, "START JOB4")
+                    Log.d(TAG, "** while (!stop) **")
+//                    ccvpn_eventSharedFlow.takeWhile { !stop }.collect {
+                    Log.d(TAG, "@*@*@*@*@*@ ccvpn_eventSharedFlow collect")
 //                    if (!reconnectionSettings.isReconnection) channel.receive()
 //                    if (!ccvpn_channel.isEmpty) {
                         checkNetworks()
 
-//                        val disconnect = ccvpn_channel.receive()
-                        val disconnect = it
+                        val disconnect = ccvpn_channel.receive()
+//                        val disconnect = it
                         Log.e(
                             TAG,
                             "000000 BoolPreference.HOME_CONNECTOR: {${
@@ -441,9 +447,9 @@ internal class ControlClientVPN(internal val vpnService: MainService) :
 //                                if (queue==0) {
 //                                queue = queue.inc()
 //                                }
-                                ccvpn_eventSharedFlow.emit(1)
-//                                ccvpn_channel.send(1)
-                                Log.e(TAG, "ccvpn_channel.send reconnect")
+//                                ccvpn_eventSharedFlow.tryEmit(1)
+                                ccvpn_channel.send(1)
+                                Log.e(TAG, "ccvpn_eventSharedFlow.emit reconnect")
 
 //                            val result = withTimeoutOrNull(20_000) {
 //                                while (true) {
@@ -479,14 +485,20 @@ internal class ControlClientVPN(internal val vpnService: MainService) :
                         }
 //                    checkNetworks()
 //                    }
-                    } // while
-                }
+                        if(stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED){
+                            vpnService.ccMQTT?.start()
+                        }else{
+                            vpnService.ccMQTT?.stop()
+                        }
+                    }
+                } // while
+                Log.d(TAG, "** вышли из while **")
+//                ccvpn_eventSharedFlow.collect()
                 jobRun = null
                 reconnectionSettings.resetCount()
                 stateAndSettings.vpn_state = enumStateVPN.VPN_DISCONNECTED
 //                checkNetworks()
                 refreshStatus()
-                Log.d(TAG, "** вышли из while **")
 
                 setActionToService(EnumStateService.SERVICE_STOPPED)
 
@@ -799,7 +811,7 @@ internal class ControlClientVPN(internal val vpnService: MainService) :
 //                "run while in launchJobControl isActive: " + if (isActive) "true" else "false"
 //            )
             while (isActive) {
-                Log.d(TAG, "while in launchJobControl")
+//                Log.d(TAG, "while in launchJobControl")
 //                checkNetworks()
                 val candidate = controlQueue.take()
                 if (candidate == 0) break
@@ -1074,7 +1086,8 @@ internal class ControlClientVPN(internal val vpnService: MainService) :
                     enumStateVPN.VPN_CONNECTING -> VPNstatus = "Подключение..."
                     enumStateVPN.VPN_CONNECTED -> VPNstatus = "Подключено!!!"
                     enumStateVPN.VPN_DISCONNECTING -> VPNstatus = "Отключение..."
-                    enumStateVPN.VPN_DISCONNECTED -> VPNstatus = "Отключено"
+//                    enumStateVPN.VPN_DISCONNECTED -> VPNstatus = "Отключено"
+                    else -> {VPNstatus = "Отключено"}
                 }
                 summary.add("[VPN status] $VPNstatus")
                 if (stateAndSettings.vpn_state == enumStateVPN.VPN_CONNECTED) {

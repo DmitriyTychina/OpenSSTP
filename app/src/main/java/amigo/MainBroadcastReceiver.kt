@@ -37,11 +37,10 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
 //    var event_battery: Boolean? = null
 //    var connection_list: String? = null
 
-//    @SuppressLint("RestrictedApi")
+    //    @SuppressLint("RestrictedApi")
     override fun onReceive(context: Context, intent: Intent) {
         val action = intent.action ?: return
         Log.d(TAG, "onReceive.action=$action")
-        val service = Intent(context.applicationContext, MainService::class.java)
         val prefs =
             PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
 //        val flagautostart = sharedPreferences.getBoolean("HOME_CONNECTOR", false)
@@ -56,15 +55,11 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
         ) {
             // запускаем сервис
             VpnService.prepare(context)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.applicationContext.startForegroundService(
-                    service.setAction(EnumStateService.SERVICE_START.name)
-                )
-            } else {
-                context.applicationContext.startService(
-                    service.setAction(EnumStateService.SERVICE_START.name)
-                )
-            }
+
+            setActionToService(
+                EnumStateService.SERVICE_START,
+                context
+            )
         }
 
         if (action == WifiManager.WIFI_STATE_CHANGED_ACTION) {
@@ -137,10 +132,25 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
                     }
             }
         }
-//        if (action.equals("android.intent.action.SCREEN_ON")
-//                ||action.equals("android.intent.action.SCREEN_OFF")){
-//            i.putExtra("init","screen");
-//            i.putExtra("state",action.equals("android.intent.action.SCREEN_ON") ? "true" : "false");
+        if (action == "android.intent.action.SCREEN_ON"
+            || action == "android.intent.action.SCREEN_OFF"
+        ) {
+            setActionToService(
+                EnumStateService.PUB,
+                context,
+                "screen",
+                if(action == "android.intent.action.SCREEN_ON") "true" else "false")
+        }
+
+//        if (action == "android.intent.action.BATTERY_CHANGED"){
+//            i.putExtras(intent);
+//            i.putExtra("init","batteryInfo");
+//            context.startService(i);
+//        }
+//
+//        if ((action.equals("android.intent.action.ACTION_POWER_CONNECTED") || action.equals("android.intent.action.ACTION_POWER_DISCONNECTED"))){
+//            i.putExtra("init","power");
+//            i.putExtra("power",action.equals("android.intent.action.ACTION_POWER_CONNECTED") ? "connected" : "disconnected");
 //            context.startService(i);
 //        }
 
@@ -191,17 +201,6 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
 ////        }
 //        }
 
-//        if (action.equals("android.intent.action.BATTERY_CHANGED")){
-//            i.putExtras(intent);
-//            i.putExtra("init","batteryInfo");
-//            context.startService(i);
-//        }
-
-//        if ((action.equals("android.intent.action.ACTION_POWER_CONNECTED") || action.equals("android.intent.action.ACTION_POWER_DISCONNECTED"))){
-//            i.putExtra("init","power");
-//            i.putExtra("power",action.equals("android.intent.action.ACTION_POWER_CONNECTED") ? "connected" : "disconnected");
-//            context.startService(i);
-//        }
     }
 
 //    @SuppressLint("MissingPermission")
@@ -219,4 +218,24 @@ class MainBroadcastReceiver(mode: Int = 0, fragment: PreferenceFragmentCompat? =
 //        }
 //        return "false"
 //    }
+
+    private fun setActionToService(
+        state: EnumStateService,
+        context: Context,
+        key: String = "",
+        value: String = ""
+    ) {
+        val service = Intent(context.applicationContext, MainService::class.java)
+        if (key.isNotEmpty()) service.putExtra("key", key);
+        if (value.isNotEmpty()) service.putExtra("value", value);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.applicationContext.startForegroundService(
+                service.setAction(state.name)
+            )
+        } else {
+            context.applicationContext.startService(
+                service.setAction(state.name)
+            )
+        }
+    }
 }

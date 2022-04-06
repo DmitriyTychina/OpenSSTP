@@ -11,24 +11,15 @@ import android.util.Log
 import android.widget.Toast
 import androidx.preference.PreferenceManager
 import com.app.amigo.fragment.BoolPreference
-import com.app.amigo.fragment.IntPreference
-import com.app.amigo.fragment.StrPreference
-import kotlinx.coroutines.delay
-import org.eclipse.paho.android.service.MqttAndroidClient
-import org.eclipse.paho.client.mqttv3.*
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence
-import org.xml.sax.Parser
-import java.io.IOException
-import java.io.UnsupportedEncodingException
 
-internal enum class EnumStateService(val value: String) {
+enum class EnumStateService(val value: String) {
     ENUM_NULL("com.app.amigo.NULL"),
     DIALOG_ACCOUNT("com.app.amigo.DIALOG_ACCOUNT"),
     DIALOG_VPN("com.app.amigo.DIALOG_VPN"),
     SERVICE_START("com.app.amigo.SERVICE_START"),
     SERVICE_STARTED("com.app.amigo.SERVICE_STARTED"),
 
-    TEST("com.app.amigo.TEST"),
+    PUB("com.app.amigo.PUB"),
 
     SERVICE_STOPPING("com.app.amigo.SERVICE_STOPPING"),
     SERVICE_STOPPED("com.app.amigo.SERVICE_STOPPED"),
@@ -53,7 +44,7 @@ internal enum class EnumStateTransport(val value: String) {
 //    STATE_TRANSPORT_NULL("NONE"),
 }
 
-internal class MainService : VpnService(), MqttCallback {
+internal class MainService : VpnService() {
     private var TAG = "@!@MainService"
     private var broadcastReceiver: MainBroadcastReceiver? = null
     private var callbackRequestWIFI: ConnectivityManager.NetworkCallback? = null
@@ -62,23 +53,14 @@ internal class MainService : VpnService(), MqttCallback {
 
     //    private var builder: NotificationCompat.Builder? = null
 //    internal val CHANNEL_ID = "HomeClient"
-    var controlClient: ControlClientVPN? = null
+    var ccVPN: ControlClientVPN? = null
+    internal var ccMQTT: ControlClientMQTT? = null
 
     //    internal var stateService = EnumStateService.ENUM_NULL
     internal val helper by lazy { NotificationHelper(this) }
 
 //    lateinit var cm: ConnectivityManager
-
-    private var MQTTclient: MqttAndroidClient? = null
-    private lateinit var options: MqttConnectOptions
-    private var serverUri: String? = null
     private lateinit var prefs: SharedPreferences
-    private var mqttIP: String = ""
-    private var mqttPort: String = ""
-    private var mqttLogin: String = ""
-    private var mqttPass: String = ""
-    private var mqttDevice: String = ""
-    private val clientId = "HomeClient"
 
     override fun onCreate() {
         super.onCreate()
@@ -87,8 +69,8 @@ internal class MainService : VpnService(), MqttCallback {
 //        initNoti()
 //        notificationManager = this.getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         initSettings()
-        initControlClient()
-//        initMQTT()
+        init_ccVPN()
+        init_ccMQTT()
         initReceiver()
 //        initTTS()
 //        initSensors()
@@ -100,10 +82,10 @@ internal class MainService : VpnService(), MqttCallback {
         prefs = PreferenceManager.getDefaultSharedPreferences(this)
     }
 
-    private fun initControlClient() {
-        if (controlClient == null) {
-            Log.d(TAG, "new ControlClient")
-            controlClient = ControlClientVPN(this).also {
+    private fun init_ccVPN() {
+        if (ccVPN == null) {
+            Log.d(TAG, "new ccVPN")
+            ccVPN = ControlClientVPN(this).also {
 //                helper.updateNotification("update")
 //                beForegrounded() // уведомление о работе vpn
 //                Log.d(TAG, "beForegrounded!!!!!")
@@ -112,26 +94,11 @@ internal class MainService : VpnService(), MqttCallback {
         }
     }
 
-    private fun initMQTT() {
-        Log.i(TAG, "Start initMQTT")
-        mqttIP = StrPreference.MQTT_HOST.getValue(prefs)
-        mqttPort = IntPreference.MQTT_PORT.getValue(prefs).toString()
-        mqttLogin = StrPreference.MQTT_USER.getValue(prefs)
-        mqttPass = StrPreference.MQTT_PASS.getValue(prefs)
-        mqttDevice = StrPreference.HOME_USER.getValue(prefs) // ???
-        serverUri = "tcp://$mqttIP:$mqttPort"
-        MQTTclient = MqttAndroidClient(application, serverUri, mqttDevice)
-        options = MqttConnectOptions()
-        options.isAutomaticReconnect = true
-        options.isCleanSession = false
-//        options.mqttVersion = 4
-
-        if (mqttLogin.isNotBlank()) options.userName = mqttLogin
-        if (mqttPass.isNotBlank()) options.password = mqttPass.toCharArray()
-
-        MQTTclient!!.setCallback(this)
-
-
+    private fun init_ccMQTT() {
+        if (ccMQTT == null) {
+            Log.d(TAG, "new ccMQTT")
+            ccMQTT = ControlClientMQTT(this)
+        }
     }
 
     private fun initReceiver() {
@@ -173,12 +140,11 @@ internal class MainService : VpnService(), MqttCallback {
             val filter = IntentFilter()
 //            filter.addAction("android.net.wifi.STATE_CHANGE")
 //            filter.addAction("android.intent.action.PHONE_STATE")
-//            filter.addAction("android.intent.action.PHONE_STATE")
 //            filter.addAction("android.provider.Telephony.SMS_RECEIVED")
 //            filter.addAction("android.intent.action.BATTERY_LOW")
-//            filter.addAction(Intent.ACTION_POWER_CONNECTED)
-//            filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
-//            filter.addAction(Intent.ACTION_BATTERY_CHANGED)
+            filter.addAction(Intent.ACTION_POWER_CONNECTED)
+            filter.addAction(Intent.ACTION_POWER_DISCONNECTED)
+            filter.addAction(Intent.ACTION_BATTERY_CHANGED)
 //            filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
             filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
             filter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
@@ -201,7 +167,7 @@ internal class MainService : VpnService(), MqttCallback {
 
         if (EnumStateService.SERVICE_START.name == intent?.action ?: false) {
             Log.d(TAG, "service start!!!")
-            controlClient?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
+            ccVPN?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_DISCONNECT.value))
             startForeground(
                 NotificationHelper.NOTIFICATION_ID,
                 helper.getNotification()
@@ -210,11 +176,12 @@ internal class MainService : VpnService(), MqttCallback {
             return START_STICKY
         } else if (EnumStateService.SERVICE_STOPPING.name == intent?.action ?: false) {
             Log.d(TAG, "service stopping!!!")
-//            MQTTclient!!.disconnect()
-            controlClient?.launchJobRun(4) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+//            ccMQTT?.stop()
+            ccVPN?.launchJobRun(4) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             return START_STICKY
         } else if (EnumStateService.SERVICE_STOPPED.name == intent?.action ?: false) {
             Log.d(TAG, "service stopped!!!")
+//            ccMQTT?.stop()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 stopForeground(true)
             }
@@ -223,25 +190,20 @@ internal class MainService : VpnService(), MqttCallback {
             return START_NOT_STICKY
         } else if (EnumStateService.SERVICE_STARTED.name == intent?.action ?: false) {
             Log.d(TAG, "service started!!! start mqtt!!!")
+//            ccMQTT?.start()
 
-//            val token = MQTTclient!!.connect(options)
-//            token.actionCallback = object : IMqttActionListener {
-//                override fun onSuccess(asyncActionToken: IMqttToken) {
-//                    Log.d(TAG, "actionCallback-onSuccess: Connection")
-//                    setSubscribe()
-//                    pubOne()
-//                    Log.d(TAG, "actionCallback-onSuccess: Connected")
-////                    isStarted = true
-//                }
-//
-//                override fun onFailure(asyncActionToken: IMqttToken, exception: Throwable) {
-//                    Log.d(TAG, "actionCallback-onFailure: Connection Failure")
-//                    //                        toast = Toast.makeText(getApplicationContext(),
-//                    //                                "Connection Failure", Toast.LENGTH_SHORT);
-//                    //                        toast.show();
-////                                            sendBrodecast("ConnectionFailure");
-//                }
-//            }
+            return START_STICKY
+        } else if (EnumStateService.PUB.name == intent?.action ?: false) {
+
+            if (intent != null && intent.extras != null) {
+                val key = intent.getStringExtra("key")
+                val value = intent.getStringExtra("value")
+                Log.d(TAG, "service COMMAND: $key = $value")
+                when(key) {
+                   "screen" -> ccMQTT?.publish("info/display/on", value!!)
+                }
+            }
+
 
             return START_STICKY
         } else {
@@ -297,7 +259,7 @@ internal class MainService : VpnService(), MqttCallback {
 //        controlClient?.onCommand(null)
 //        controlClient = null
         Toast.makeText(applicationContext, "service stop!!!", Toast.LENGTH_LONG).show()
-        controlClient?.logStream?.close()
+        ccVPN?.logStream?.close()
         BoolPreference.HOME_CONNECTOR.setEnabled(true)
     }
 
@@ -313,25 +275,25 @@ internal class MainService : VpnService(), MqttCallback {
                     )
                         .toString()
                 )
-                controlClient?.checkNetworks()
-                controlClient?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                ccVPN?.checkNetworks()
+                ccVPN?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
 
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost WiFi: ${network}")
-                controlClient?.checkNetworks()
+                ccVPN?.checkNetworks()
 //                controlClient?.launchJobRun(6) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
 
             override fun onLinkPropertiesChanged(network: Network, linkProperties: LinkProperties) {
                 super.onLinkPropertiesChanged(network, linkProperties)
                 Log.e(TAG, "onLinkPropertiesChanged WiFi: ${network} ---- ${linkProperties}")
-                if (controlClient != null) {
-                    if (controlClient!!.stateAndSettings.wifi_dns != linkProperties.dnsServers.toString()) {
-                        controlClient!!.stateAndSettings.wifi_dns =
+                if (ccVPN != null) {
+                    if (ccVPN!!.stateAndSettings.wifi_dns != linkProperties.dnsServers.toString()) {
+                        ccVPN!!.stateAndSettings.wifi_dns =
                             linkProperties.dnsServers.toString()
-                        controlClient!!.refreshStatus()
+                        ccVPN!!.refreshStatus()
                     }
                 }
             }
@@ -348,14 +310,14 @@ internal class MainService : VpnService(), MqttCallback {
                     )
                         .toString()
                 )
-                controlClient?.checkNetworks()
-                controlClient?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
+                ccVPN?.checkNetworks()
+                ccVPN?.launchJobRun(0) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
 
             override fun onLost(network: Network) {
                 super.onLost(network)
                 Log.e(TAG, "onLost CELLULAR: ${network}")
-                controlClient?.checkNetworks()
+                ccVPN?.checkNetworks()
 //                controlClient?.launchJobRun(8) // onExeption(Throwable(EnumAction.ACTION_CONNECT.value))
             }
 
@@ -387,190 +349,4 @@ internal class MainService : VpnService(), MqttCallback {
             )
         }
     }
-
-    override fun connectionLost(cause: Throwable?) {
-        Log.d(TAG, "!!!!!!!!!!connectionLost: $cause")
-    }
-
-    //    @Throws(Exception::class)
-    override fun messageArrived(topic: String, message: MqttMessage) {
-        Log.d(TAG, "topic: $topic value: $message")
-        Log.d(TAG, message.toString())
-//        if (message.toString() == "") {
-//            return
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/tts/request") {
-//            if (speakOut(message.toString())) publish("comm/tts/request", "")
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/tts/stop") {
-//            if (isTrue(message.toString()) == 1) {
-//                if (speakStop()) publish("comm/tts/stop", "")
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/display/brightness") {
-//            if (isNumber(message.toString())) {
-//                if (setBrightness(message.toString().toInt())) {
-//                    publish("comm/display/brightness", "")
-//                    publish("info/display/brightness", message.toString())
-//                    publish("info/display/mode", "manual")
-//                }
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/display/mode") {
-//            val num = isTrue(message.toString())
-//            if (num == 1 || num == 2) {
-//                if (setBrightnessMode(if (num == 1) "auto" else "manual")) {
-//                    publish("comm/display/mode", "")
-//                    publish("info/display/mode", if (num == 1) "auto" else "manual")
-//                }
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/display/timeOff") {
-//            if (isNumber(message.toString())) {
-//                if (setTimeScreenOff(message.toString().toInt())) publish(
-//                    "comm/display/timeOff",
-//                    ""
-//                )
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/display/toWake") {
-//            val num = isTrue(message.toString())
-//            if (num == 1 || num == 2) {
-////                set(num);
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/call/number") {
-//            if (isNumber(message.toString())) {
-//                if (setCall(message.toString())) publish("comm/call/number", "")
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/call/end") {
-//            if (isTrue(message.toString()) == 1) {
-//                if (disconnectCall()) publish("comm/call/end", "")
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/other/home") {
-//            if (isTrue(message.toString()) == 1) {
-//                if (setHome()) publish("comm/other/home", "")
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/other/openURL") {
-//            if (openURL(message.toString())) publish("comm/other/openURL", "")
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/other/openURL") {
-//            if (openURL(message.toString())) publish("comm/other/openURL", "")
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/display/turnOnOff") {
-//            if (isTrue(message.toString()) == 1) {
-//                turnOnScreen()
-//                publish("comm/display/turnOnOff", "")
-//            } else if (isTrue(message.toString()) == 2) {
-//                turnOffScreen()
-//                publish("comm/display/turnOnOff", "")
-//            }
-//        }
-//        if (topic == clientId + "/" + mqttDevice + "/comm/other/vibrate") {
-//            if (isNumber(message.toString())) {
-//                if (vibrate(message.toString().toInt())) publish("comm/other/vibrate", "")
-//            }
-//        }
-//        if (topic.contains(clientId + "/" + mqttDevice + "/comm/audio/")) {
-////            Log.i(TAG,"TOPIC : "+topic);
-//            val key: String =
-//                topic.replace(clientId + "/" + mqttDevice + "/comm/audio/".toRegex(), "")
-//            //            Log.i(TAG,key);
-//            if (isNumber(message.toString())) {
-//                if (setVolume(message.toString().toInt(), key)) {
-//                    publish("comm/audio/$key", "")
-//                    publish("info/audio/$key", message.toString())
-//                }
-//            }
-    }
-
-    override fun deliveryComplete(token: IMqttDeliveryToken?) {
-        Log.d(TAG, "!!!!!!!!!!deliveryComplete: $token")
-    }
-
-    fun publish(topic: String, msg: String, qos: Int = 1, retained: Boolean = false) {
-        if (MQTTclient!!.isConnected) {
-            try {
-                val message = MqttMessage()
-                message.payload = msg.toByteArray()
-                message.qos = qos
-                message.isRetained = retained
-                MQTTclient!!.publish(topic, message, null, object : IMqttActionListener {
-                    override fun onSuccess(asyncActionToken: IMqttToken?) {
-                        Log.d(TAG, "$msg published to $topic")
-                    }
-
-                    override fun onFailure(asyncActionToken: IMqttToken?, exception: Throwable?) {
-                        Log.d(TAG, "Failed to publish $msg to $topic")
-                    }
-                })
-            } catch (e: MqttException) {
-                e.printStackTrace()
-            }
-//            try {
-//                val encodedPayload = payload.toByteArray(charset("UTF-8"))
-//                val message = MqttMessage(encodedPayload)
-//                MQTTclient!!.publish(clientId + "/" + mqttDevice + "/" + topic, message)
-//            } catch (e: UnsupportedEncodingException) {
-//                e.printStackTrace()
-//            } catch (e: MqttPersistenceException) {
-//                e.printStackTrace()
-//            } catch (e: MqttException) {
-//                e.printStackTrace()
-//            }
-        }
-    }
-
-    private fun pubOne() {
-        publish("info/general/API", Build.VERSION.SDK_INT.toString())
-        publish("info/general/BRAND", Build.BRAND)
-        publish("info/general/BOARD", Build.BOARD)
-        publish("info/general/DISPLAY", Build.DISPLAY)
-        publish("info/general/FINGERPRINT", Build.FINGERPRINT)
-        publish("info/general/HARDWARE", Build.HARDWARE)
-        publish("info/general/HOST", Build.HOST)
-        publish("info/general/ID", Build.ID)
-        publish("info/general/BOOTLOADER", Build.BOOTLOADER)
-        publish("info/general/DEVICE", Build.DEVICE)
-
-        publish("info/general/MANUFACTURER", Build.MANUFACTURER)
-        publish("info/general/USER", Build.USER)
-        publish("info/general/MODEL", Build.MODEL)
-        publish("info/general/PRODUCT", Build.PRODUCT)
-        publish("info/general/TAGS", Build.TAGS)
-        publish("info/general/TYPE", Build.TYPE)
-        publish("info/general/UNKNOWN", Build.UNKNOWN)
-        publish("info/general/SERIAL", Build.SERIAL)
-        publish("info/general/BASE_OS", Build.VERSION.BASE_OS)
-        publish("info/general/SECURITY_PATCH", Build.VERSION.SECURITY_PATCH)
-    }
-
-    private fun setSubscribe() {
-        val qos = 1
-        try {
-            if (MQTTclient != null) {
-                val subToken: IMqttToken =
-                    MQTTclient!!.subscribe(clientId + "/" + mqttDevice + "/comm/*", qos)
-                subToken.actionCallback = object : IMqttActionListener {
-                    override fun onSuccess(asyncActionToken: IMqttToken) {
-                        Log.d(TAG, "setSubscribe-onSuccess: $asyncActionToken");
-                        // The message was published
-                    }
-
-                    override fun onFailure(
-                        asyncActionToken: IMqttToken,
-                        exception: Throwable
-                    ) {
-                        Log.d(TAG, "setSubscribe-onFailure: $asyncActionToken @ $exception");
-                    }
-                }
-            }
-        } catch (e: MqttException) {
-            e.printStackTrace()
-        }
-    }
-
 }
